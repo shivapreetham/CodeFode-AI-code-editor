@@ -8,7 +8,7 @@ const Header = () => {
   const { data: session, status } = useSession();
 
   if (status === "loading") {
-    return <div />;
+    return <h2 className="text-white text-center py-5">Fetching Session Details...</h2>;
   }
 
   return (
@@ -20,7 +20,7 @@ const Header = () => {
             className="flex items-center rounded-lg border-y-2 border-b-[var(--brand-color)] outline-none"
           >
             <span className="self-center text-white text-xl font-semibold whitespace-nowrap">
-              Code<span className="text-[var(--brand-color)]">Socket</span>
+              Code<span className="text-[var(--brand-color)]">-Assisstant</span>
             </span>
           </Link>
           <div className="flex items-center lg:order-2">

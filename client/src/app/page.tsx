@@ -69,7 +69,7 @@ export default function Home() {
               height={1200}
               className="w-full h-auto"
               src="/assets/codesocket_editor_ui.png"
-              alt="codesocket editor screenshot"
+              alt="code-assistant editor screenshot"
             />
           </motion.div>
         </div>

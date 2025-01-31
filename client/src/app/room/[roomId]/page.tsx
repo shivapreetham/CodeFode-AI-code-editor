@@ -272,6 +272,11 @@ const Page = () => {
         setClients(clients);
       });
 
+      socketRef.current.on(ACTIONS.LOAD_MESSAGES, (chatHistory: Message[]) => {
+        console.log("Loaded messages from server:", chatHistory);
+        setMessages(chatHistory); // Update chat history from server
+      });
+
       socketRef.current.on(
         ACTIONS.DISCONNECTED,
         ({ username, socketId }: { username: string; socketId: string }) => {

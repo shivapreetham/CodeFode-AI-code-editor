@@ -30,6 +30,11 @@ const Chat: React.FC<ChatProps> = ({ socket, username, roomId }) => {
       setMessages((prev) => [...prev, { sender: data.sender, text:data.text, timestamp: data.timestamp }]);
     });
 
+    socket.on(ACTIONS.LOAD_MESSAGES, (chatHistory: Message[]) => {
+      console.log("Loaded messages in chat component:", chatHistory);
+      setMessages(chatHistory); // Update chat history from server
+    });
+
     return () => {
       socket.off(ACTIONS.RECEIVE_MESSAGE);
     };

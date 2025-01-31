@@ -1,0 +1,28 @@
+.bg_full {
+  background: rgb(115, 33, 125);
+  background: radial-gradient(
+    circle,
+    rgba(90, 12, 100, 0.721) 47%,
+    #e22ace 97%
+  );
+}
+
+.animate_heart {
+  animation: scale_heart 1s infinite;
+}
+
+@keyframes scale_heart {
+  0%, 100% {
+      transform: scale(0.75);  
+  }
+  25% {
+      transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  75% {
+    transform: scale(1);
+  }
+}
+

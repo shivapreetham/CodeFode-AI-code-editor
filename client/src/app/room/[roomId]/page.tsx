@@ -1,6 +1,6 @@
 "use client";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import "./page.css";
 import { initSocket } from "@/socket";
@@ -10,6 +10,7 @@ import { Socket } from "socket.io-client";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import SourceIcon from "@mui/icons-material/Source";
 import Peoples from "@/app/components/Peoples";
+import ChatIcon from '@mui/icons-material/Chat';
 import FileExplorer from "@/app/components/fileExplorer/FileExplorer";
 import CloseIcon from "@mui/icons-material/Close";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
@@ -18,6 +19,8 @@ import { IDataPayload } from "@/interfaces/IDataPayload";
 import { v4 as uuid } from "uuid";
 import axios, { AxiosError } from "axios";
 import Loading from "@/app/components/loading/Loading";
+import Chat, { Message } from "@/app/components/chat/Chat";
+import { ChatContext } from "@/context/ChatContext";
 
 const filesContentMap = new Map<string, IFile>();
 
@@ -33,7 +36,9 @@ filesContentMap.set(initialActiveFile.path, initialActiveFile);
 const Page = () => {
   const params = useParams();
   const query = useSearchParams();
+  const username= query.get("username");
   const router = useRouter();
+  const { messages, setMessages } = useContext(ChatContext);
 
   const { roomId } = params;
 
@@ -350,6 +355,16 @@ const Page = () => {
             "&:hover": { color: "#ffe200" },
           }}
         />
+
+        <ChatIcon
+          onClick={() => handleTabChange(2)}
+          sx={{
+            cursor: "pointer",
+            fontSize: "2rem",
+            color: activeTab === 2 ? "#ffe200" : "#8c7f91",
+            "&:hover": { color: "#ffe200" },
+          }}
+        />
       </div>
       <div className="w-full md:w-[30%] lg:w-[30%] md:h-screen bg-[#right] border-r border-r-[#605c5c]">
         {activeTab === 0 && (
@@ -366,6 +381,9 @@ const Page = () => {
         )}
         {activeTab === 1 && (
           <Peoples clients={clients} roomId={roomId as string} />
+        )}
+        {activeTab === 2 && username && roomId && (
+          <Chat socket={socketRef.current} username={username} roomId={roomId as string} />
         )}
       </div>
       <div className="coegle_editor w-full md:w-[70%] h-screen">

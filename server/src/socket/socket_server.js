@@ -50,6 +50,10 @@ const initSocketServer = (app) => {
       socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { payload });
     });
 
+    socket.on(ACTIONS.GET_MESSAGES, ({ roomId }) => {
+      socket.emit(ACTIONS.LOAD_MESSAGES, chatMessages[roomId]);
+    });
+
     socket.on(ACTIONS.SEND_MESSAGE, ({ roomId, message, toSocketId, username,timestamp }) => {
       // console.log("chatMessages[roomId]", chatMessages[roomId]);
       const sender = userSocketMap[socket.id];

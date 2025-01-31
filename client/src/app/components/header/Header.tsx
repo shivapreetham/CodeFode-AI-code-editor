@@ -8,7 +8,11 @@ const Header = () => {
   const { data: session, status } = useSession();
 
   if (status === "loading") {
-    return <h2 className="text-white text-center py-5">Fetching Session Details...</h2>;
+    return (
+      <h2 className="text-white text-center py-5">
+        Fetching Session Details...
+      </h2>
+    );
   }
 
   return (

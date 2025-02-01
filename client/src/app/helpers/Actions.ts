@@ -4,6 +4,10 @@ export const ACTIONS = {
     DISCONNECTED: 'disconnected',
     CODE_CHANGE: 'code-change',
     SYNC_CODE: 'sync-code',
-    LEAVE: 'leave'
+    LEAVE: 'leave',
+    SEND_MESSAGE: "send-message",
+    RECEIVE_MESSAGE: "receive-message",
+    LOAD_MESSAGES : "load-messages",
+    GET_MESSAGES : "get-messages",
 };
 

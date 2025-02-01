@@ -12,6 +12,7 @@
   "author": "abhishekmaran",
   "license": "ISC",
   "dependencies": {
+    "ai": "^4.1.16",
     "bull": "^4.16.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

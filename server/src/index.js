@@ -5,7 +5,7 @@ import { app, server } from "./socket/initsocket.js";
 import userRoutes from './routes/userRoutes.js'
 import workspaceRouters from './routes/workspaceRoutes.js'
 import connectDB from "./db/dbconn.js";
-
+import aiCodeRoutes from './routes/aiRoutes.js'
 dotenv.config()
 app.use(express.json())
 app.use(cors({
@@ -16,6 +16,7 @@ const PORT =process.env.PORT  || 8000 ;
 // console.log(process.env.MONGODB_URL)
 app.use('/api/user',userRoutes);
 app.use('/api/workspace',workspaceRouters)
+app.use('/api/ai',aiCodeRoutes)
 
 console.log("mongodb uri", process.env.MONGODB_URI);
 

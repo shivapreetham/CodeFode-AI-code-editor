@@ -16,6 +16,7 @@
     "@mui/icons-material": "^6.0.1",
     "@mui/material": "^6.0.1",
     "@xterm/xterm": "^5.5.0",
+    "ai": "^4.1.16",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "framer-motion": "^11.5.6",

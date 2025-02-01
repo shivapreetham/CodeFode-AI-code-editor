@@ -8,5 +8,6 @@ export const ACTIONS = {
     SEND_MESSAGE: 'send-message',
     RECEIVE_MESSAGE: 'receive-message',
     LOAD_MESSAGES : "load-messages",
+    GET_MESSAGES : "get-messages",
 };
 

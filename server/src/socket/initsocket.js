@@ -1,9 +1,12 @@
-import http from "http";
 import { Server } from "socket.io";
+import http from "http";
 import { ACTIONS } from "../constants/actions.js";
 
-const initSocketServer = (app) => {
-  const server = http.createServer(app);
+import express from "express";
+
+const app = express();
+
+const server = http.createServer(app);
   const io = new Server(server);
 
   const userSocketMap = {};
@@ -85,6 +88,17 @@ const initSocketServer = (app) => {
       //   });
       // }
     });
+
+    socket.on(ACTIONS.CURSOR_MOVE, ({ roomId, username, position, filePath }) => {
+      socket.broadcast.to(roomId).emit(ACTIONS.CURSOR_MOVE, {
+        username,
+        position,  // { lineNumber, column }
+        filePath,
+      });
+
+      console.log("username", username, "position", position);
+    });
+
     socket.on("disconnecting", () => {
       const rooms = [...socket.rooms];
       rooms.forEach((roomId) => {
@@ -100,11 +114,4 @@ const initSocketServer = (app) => {
     });
   });
 
-  const PORT = process.env.PORT || 8000;
-
-  server.listen(PORT, () => {
-    console.log(`[server] listening on port ${PORT}`);
-  });
-};
-
-export { initSocketServer };
+export { app, io, server };

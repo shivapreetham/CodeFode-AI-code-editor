@@ -1,3 +1,4 @@
+
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
 import { v4 as uuid } from "uuid";
 
@@ -40,5 +41,64 @@ export const useTraverseTree = () => {
     return { ...fileExplorerNode, nodes: updatedNodes as IFileExplorerNode[] };
   };
 
-  return { insertNode, deleteNode };
+  const renameNode = (
+    nodeId: string,
+    newName: string,
+    fileExplorerNode: IFileExplorerNode
+  ): IFileExplorerNode => {
+    if (nodeId === fileExplorerNode.id) {
+      const newPath = fileExplorerNode.path.replace(fileExplorerNode.name, newName);
+      return { ...fileExplorerNode, name: newName, path: newPath };
+    }
+
+    const updatedNodes = fileExplorerNode.nodes.map(
+      (node) => renameNode(nodeId, newName, node)
+    );
+
+    return { ...fileExplorerNode, nodes: updatedNodes };
+  };
+
+  const moveNode = (
+    sourceId: string,
+    targetId: string,
+    fileExplorerNode: IFileExplorerNode
+  ): IFileExplorerNode => {
+    let nodeToMove: IFileExplorerNode | null = null;
+    
+    const removeNode = (node: IFileExplorerNode): IFileExplorerNode => {
+      if (node.id === sourceId) {
+        nodeToMove = { ...node };
+        return {
+          ...node,
+          nodes: []
+        };
+      }
+      return {
+        ...node,
+        nodes: node.nodes
+          .map(removeNode)
+          .filter((n) => n.id !== sourceId),
+      };
+    };
+
+    const tempTree = removeNode(fileExplorerNode);
+    
+    const insertNode = (node: IFileExplorerNode): IFileExplorerNode => {
+      if (node.id === targetId && nodeToMove) {
+        const newPath = `${node.path}/${nodeToMove.name}`;
+        return {
+          ...node,
+          nodes: [{ ...nodeToMove, path: newPath }, ...node.nodes],
+        };
+      }
+      return {
+        ...node,
+        nodes: node.nodes.map(insertNode),
+      };
+    };
+
+    return nodeToMove ? insertNode(tempTree) : fileExplorerNode;
+  };
+
+  return { insertNode, deleteNode, renameNode, moveNode };
 };

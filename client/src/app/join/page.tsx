@@ -141,7 +141,7 @@ export default function Home() {
           </button>
 
           <div className="text-sm font-medium text-gray-500 dark:text-gray-300">
-            Don't have an invitation?{" "}
+          Don&apos;t have an invitation?{" "}
             <span
               onClick={handleCreateRoom}
               className="cursor-pointer text-pink-500 hover:underline"

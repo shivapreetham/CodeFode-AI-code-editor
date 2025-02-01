@@ -69,12 +69,15 @@ export default function Home() {
               height={1200}
               className="w-full h-auto"
               src="/assets/codesocket_editor_ui.png"
-              alt="codesocket editor screenshot"
+              alt="code-assistant editor screenshot"
             />
           </motion.div>
         </div>
       </div>
-      <div id="starIt" className="flex flex-col items-center justify-center mb-24 sm:mb-32 gap-2">
+      <div
+        id="starIt"
+        className="flex flex-col items-center justify-center mb-24 sm:mb-32 gap-2"
+      >
         <motion.h2
           initial={{ opacity: 0, transform: "translateY(100px)" }}
           whileInView={{ opacity: 1, transform: "translateY(0px)" }}
@@ -82,7 +85,7 @@ export default function Home() {
           transition={{ duration: 0.75 }}
           className="text-2xl sm:text-4xl font-bold text-white text-center"
         >
-          Enjoying the Project?
+          Welcome
         </motion.h2>
         <motion.h2
           initial={{ opacity: 0, transform: "translateY(100px)" }}
@@ -91,29 +94,15 @@ export default function Home() {
           transition={{ duration: 0.75, delay: 0.5 }}
           className="text-sm sm:text-xl text-white text-center"
         >
-          If you find it helpful, give it a star on GitHub!
+          I hope you will enjoy our project...
         </motion.h2>
-        <motion.div   initial={{ opacity: 0, transform: "translateY(100px)" }}
+        <motion.div
+          initial={{ opacity: 0, transform: "translateY(100px)" }}
           whileInView={{ opacity: 1, transform: "translateY(0px)" }}
           viewport={{ once: true, amount: "some" }}
-          transition={{ duration: 0.75, delay: 0.5 }} className="flex items-center mt-5">
-          <a
-            href="https://github.com/maran1947/codesocket"
-            className="flex items-center w-full px-4 py-2 text-base font-medium text-black bg-[var(--brand-color)] rounded-md hover:bg-[#f130eeaf]"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              className="w-4 h-4 mr-2"
-              fill="currentColor"
-              viewBox="0 0 1792 1792"
-            >
-              <path d="M1728 647q0 22-26 48l-363 354 86 500q1 7 1 20 0 21-10.5 35.5t-30.5 14.5q-19 0-40-12l-449-236-449 236q-22 12-40 12-21 0-31.5-14.5t-10.5-35.5q0-6 2-20l86-500-364-354q-25-27-25-48 0-37 56-46l502-73 225-455q19-41 49-41t49 41l225 455 502 73q56 9 56 46z"></path>
-            </svg>
-            Star it on GitHub!
-          </a>
-        </motion.div>
+          transition={{ duration: 0.75, delay: 0.5 }}
+          className="flex items-center mt-5"
+        ></motion.div>
       </div>
       <Footer />
     </main>

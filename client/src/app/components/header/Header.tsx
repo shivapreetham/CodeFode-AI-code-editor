@@ -1,22 +1,42 @@
-import React from "react";
+"use client";
+
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import Loading from "../loading/Loading";
+import { useEffect } from "react";
 
 const Header = () => {
+  const { data: session, status } = useSession();
+
   return (
     <header>
       <nav className="border-gray-200 px-4 lg:px-6 py-2.5">
         <div className="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
-          <a href="/" className="flex items-center rounded-lg border-y-2 border-b-[var(--brand-color)] outline-none">
+          <Link
+            href="/"
+            className="flex items-center rounded-lg border-y-2 border-b-[var(--brand-color)] outline-none"
+          >
             <span className="self-center text-white text-xl font-semibold whitespace-nowrap">
-              Code<span className="text-[var(--brand-color)]" >Socket</span>
+              Code<span className="text-[var(--brand-color)]">-Assisstant</span>
             </span>
-          </a>
+          </Link>
           <div className="flex items-center lg:order-2">
-            <a
-              href="/join"
-              className="text-white border border-white hover:text-white hover:border-[var(--brand-color)] hover:bg-[var(--brand-color)] font-medium rounded-lg text-sm px-4 lg:px-8 py-1 lg:py-2 mr-2"
-            >
-              Join
-            </a>
+            {/* Conditional rendering based on session */}
+            {session ? (
+              <Link
+                href="/profile"
+                className="text-white border border-white hover:text-white hover:border-[var(--brand-color)] hover:bg-[var(--brand-color)] font-medium rounded-lg text-sm px-4 lg:px-8 py-1 lg:py-2 mr-2"
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="text-white border border-white hover:text-white hover:border-[var(--brand-color)] hover:bg-[var(--brand-color)] font-medium rounded-lg text-sm px-4 lg:px-8 py-1 lg:py-2 mr-2"
+              >
+                Login
+              </Link>
+            )}
             <button
               data-collapse-toggle="mobile-menu-2"
               type="button"
@@ -57,29 +77,21 @@ const Header = () => {
           >
             <ul className="flex flex-col mt-4 font-medium lg:flex-row lg:space-x-8 lg:mt-0">
               <li>
-                <a
-                  href="#"
+                <Link
+                  href="/"
                   className="block py-2 pr-4 pl-3 text-[var(--brand-color)] hover:text-[var(--brand-color)] rounded bg-primary-700 lg:bg-transparent lg:text-primary-700 lg:p-0"
                   aria-current="page"
                 >
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   href="#"
                   className="block py-2 pr-4 pl-3 text-[#d1baba] hover:text-[var(--brand-color)] border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-primary-700 lg:p-0 "
                 >
                   Features
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#starIt"
-                  className="block py-2 pr-4 pl-3 text-[#d1baba] hover:text-[var(--brand-color)] border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-primary-700 lg:p-0 "
-                >
-                  Star
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

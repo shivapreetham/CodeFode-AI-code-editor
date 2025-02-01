@@ -41,14 +41,16 @@ export const useAISuggestions = ({ enabled }: UseAISuggestionsProps) => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await axios.post<AIResponse>('/api/code', { code, language });
+      // console.log("sending the api request");
+      const response = await axios.post<AIResponse>(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ai/code`, { code, language });
       setAIResponse(response.data);
+      console.log("got response from AI:", response.data);
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err);
         console.error('Error fetching AI suggestions:', err);
       }
-      setAIResponse(undefined);  // Changed from null to undefined
+      setAIResponse(undefined);
     } finally {
       setIsLoading(false);
     }

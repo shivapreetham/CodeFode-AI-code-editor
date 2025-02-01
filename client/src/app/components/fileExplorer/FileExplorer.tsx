@@ -26,7 +26,7 @@ function FileExplorer({
   isFileExplorerUpdated,
   setIsFileExplorerUpdated,
 }: FileExplorerProps) {
-  const { insertNode, deleteNode } = useTraverseTree();
+  const { insertNode, deleteNode, renameNode, moveNode } = useTraverseTree();
 
   const handleInsertNode = (
     folderId: string,
@@ -59,7 +59,61 @@ function FileExplorer({
             };
       setActiveFile(updatedActiveFile);
       setFiles(updatedOpenFiles);
-      setIsFileExplorerUpdated(true)
+      setIsFileExplorerUpdated(true);
+    }
+  };
+
+  const handleRename = (nodeId: string, newName: string) => {
+    const updatedFileExplorerData = renameNode(nodeId, newName, fileExplorerData);
+    setFileExplorerData(updatedFileExplorerData);
+    
+    // Update open files paths and names if renamed file is open
+    const updatedFiles = files.map(file => {
+      if (file.path.includes(nodeId)) {
+        const newPath = file.path.replace(file.name, newName);
+        return { ...file, name: newName, path: newPath };
+      }
+      return file;
+    });
+    setFiles(updatedFiles);
+
+    // Update active file if it's the renamed one
+    if (activeFile.path.includes(nodeId)) {
+      const newPath = activeFile.path.replace(activeFile.name, newName);
+      setActiveFile({ ...activeFile, name: newName, path: newPath });
+    }
+  };
+
+  const handleMove = (sourceId: string, targetId: string) => {
+    const updatedFileExplorerData = moveNode(sourceId, targetId, fileExplorerData);
+    if (updatedFileExplorerData !== null) {
+      setFileExplorerData(updatedFileExplorerData);
+      
+      // Update paths of moved files in open files
+      const findNewPath = (node: IFileExplorerNode): string | null => {
+        if (node.id === sourceId) return node.path;
+        for (const child of node.nodes) {
+          const path = findNewPath(child);
+          if (path) return path;
+        }
+        return null;
+      };
+
+      const newPath = findNewPath(updatedFileExplorerData);
+      if (newPath) {
+        const updatedFiles = files.map(file => {
+          if (file.path.includes(sourceId)) {
+            return { ...file, path: newPath };
+          }
+          return file;
+        });
+        setFiles(updatedFiles);
+
+        // Update active file path if it was moved
+        if (activeFile.path.includes(sourceId)) {
+          setActiveFile({ ...activeFile, path: newPath });
+        }
+      }
     }
   };
 
@@ -75,6 +129,8 @@ function FileExplorer({
       <FileExplorerNode
         handleInsertNode={handleInsertNode}
         handleDeleteNode={handleDeleteNode}
+        handleRename={handleRename}
+        handleMove={handleMove}
         fileExplorerNode={fileExplorerData}
         activeFile={activeFile}
         setActiveFile={setActiveFile}

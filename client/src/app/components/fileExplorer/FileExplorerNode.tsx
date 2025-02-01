@@ -5,6 +5,7 @@ import ArrowIcon from "@mui/icons-material/ArrowForwardIosOutlined";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
 import CreaterNewFileOutlinedIcon from "@mui/icons-material/NoteAddOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import EditIcon from "@mui/icons-material/EditOutlined";
 import { IFile } from "@/interfaces/IFile";
 import { getLanguageByFileExtension } from "@/utils/getLanguageByExt";
 
@@ -12,6 +13,8 @@ interface FileExplorereNodeProps {
   fileExplorerNode: IFileExplorerNode;
   handleInsertNode: (id: string, name: string, isFolder: boolean) => void;
   handleDeleteNode: (nodeId: string, nodePath: string) => void;
+  handleRename: (nodeId: string, newName: string) => void;
+  handleMove: (sourceId: string, targetId: string) => void;
   activeFile: IFile;
   setActiveFile: Dispatch<SetStateAction<IFile>>;
   files: IFile[];
@@ -20,27 +23,12 @@ interface FileExplorereNodeProps {
   setIsFileExplorerUpdated: Dispatch<SetStateAction<boolean>>;
 }
 
-const isFileAlreadyExists = (
-  filePath: string,
-  fileExplorerNode: IFileExplorerNode
-): boolean => {
-  if (filePath === fileExplorerNode.path) {
-    return true;
-  }
-
-  for (const file of fileExplorerNode.nodes) {
-    if (isFileAlreadyExists(filePath, file)) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
 const FileExplorerNode = ({
   fileExplorerNode,
   handleInsertNode,
   handleDeleteNode,
+  handleRename,
+  handleMove,
   activeFile,
   setActiveFile,
   files,
@@ -54,6 +42,8 @@ const FileExplorerNode = ({
     isFolder: false,
   });
   const [expand, setExpand] = useState(true);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newName, setNewName] = useState(fileExplorerNode.name);
 
   const handleOpenFile = () => {
     const file = {
@@ -88,42 +78,96 @@ const FileExplorerNode = ({
     handleDeleteNode(fileExplorerNode.id, fileExplorerNode.path);
   };
 
-  const handleAddNode = (value: string) => {
-    const filename = value;
-    const filePath = `${fileExplorerNode.path}/${filename}`;
-    if (isFileAlreadyExists(filePath, fileExplorerNode)) {
-      alert(`${filename} is already exists.`);
-      return;
-    }
-    handleInsertNode(fileExplorerNode.id, value, showInput.isFolder);
-    setShowInput({ ...showInput, visible: false });
-    if (!isFileExplorerUpdated) {
+  const startRename = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsRenaming(true);
+    setNewName(fileExplorerNode.name);
+  };
+
+  const submitRename = () => {
+    if (newName && newName !== fileExplorerNode.name) {
+      handleRename(fileExplorerNode.id, newName);
       setIsFileExplorerUpdated(true);
     }
-  }
+    setIsRenaming(false);
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    e.dataTransfer.setData("nodeId", fileExplorerNode.id);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (fileExplorerNode.isFolder) {
+      e.currentTarget.classList.add("bg-[#f9f5f526]");
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove("bg-[#f9f5f526]");
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove("bg-[#f9f5f526]");
+    if (fileExplorerNode.isFolder) {
+      const sourceId = e.dataTransfer.getData("nodeId");
+      if (sourceId !== fileExplorerNode.id) {
+        handleMove(sourceId, fileExplorerNode.id);
+        setIsFileExplorerUpdated(true);
+      }
+    }
+  };
 
   const onAddFolderOrFile = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const value = (e.target as HTMLInputElement).value;
     if (e.code === "Enter" && value) {
-      handleAddNode(value)
+      handleInsertNode(fileExplorerNode.id, value, showInput.isFolder);
+      setShowInput({ ...showInput, visible: false });
+      if (!isFileExplorerUpdated) {
+        setIsFileExplorerUpdated(true);
+      }
     }
   };
 
   if (fileExplorerNode.isFolder) {
     return (
-      <div>
+      <div
+        draggable={fileExplorerNode.path !== "/root"}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <div
           className="flex justify-between items-center cursor-pointer hover:border-l-2 hover:border-l-[#fec76f] hover:text-[#fec76f] py-1 px-2"
           onClick={() => setExpand(!expand)}
           onMouseOver={() => setDisplayNodeControls(true)}
           onMouseLeave={() => setDisplayNodeControls(false)}
         >
-          <span className="truncate">
+          <span className="truncate flex items-center gap-1">
             <ArrowIcon
               sx={{ fontSize: "14px" }}
               className={expand ? "rotate-90" : ""}
-            />{" "}
-            {fileExplorerNode.name}
+            />
+            {isRenaming ? (
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onBlur={submitRename}
+                onKeyDown={(e) => e.key === "Enter" && submitRename()}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#f9f5f526] text-[#fec76f] outline-none px-2"
+              />
+            ) : (
+              fileExplorerNode.name
+            )}
           </span>
           {displayNodeControls && (
             <div className="flex items-center gap-1">
@@ -134,7 +178,10 @@ const FileExplorerNode = ({
                 onClick={(e) => handleNewFolder(e, false)}
               />
               {fileExplorerNode.path !== "/root" && (
-                <DeleteOutlineOutlinedIcon onClick={(e) => onDeleteNode(e)} />
+                <>
+                  <EditIcon onClick={startRename} />
+                  <DeleteOutlineOutlinedIcon onClick={(e) => onDeleteNode(e)} />
+                </>
               )}
             </div>
           )}
@@ -164,6 +211,8 @@ const FileExplorerNode = ({
                 key={node.id}
                 handleInsertNode={handleInsertNode}
                 handleDeleteNode={handleDeleteNode}
+                handleRename={handleRename}
+                handleMove={handleMove}
                 fileExplorerNode={node}
                 activeFile={activeFile}
                 setActiveFile={setActiveFile}
@@ -180,6 +229,8 @@ const FileExplorerNode = ({
   } else {
     return (
       <div
+        draggable
+        onDragStart={handleDragStart}
         onClick={handleOpenFile}
         onMouseOver={() => setDisplayNodeControls(true)}
         onMouseLeave={() => setDisplayNodeControls(false)}
@@ -190,12 +241,25 @@ const FileExplorerNode = ({
             : "")
         }
       >
-        <span className="flex gap-1">
+        <span className="flex gap-1 items-center">
           <FileIcon className="text-xl" />
-          <span className="truncate">{fileExplorerNode.name}</span>
+          {isRenaming ? (
+            <input
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onBlur={submitRename}
+              onKeyDown={(e) => e.key === "Enter" && submitRename()}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#f9f5f526] text-[#fec76f] outline-none px-2"
+            />
+          ) : (
+            <span className="truncate">{fileExplorerNode.name}</span>
+          )}
         </span>
         {displayNodeControls && (
           <div className="flex items-center gap-1">
+            <EditIcon onClick={startRename} />
             <DeleteOutlineOutlinedIcon onClick={(e) => onDeleteNode(e)} />
           </div>
         )}

@@ -1,20 +1,30 @@
-import express from "express";
+import express from "express"
+import dotenv from "dotenv"
 import cors from 'cors'
-import { initSocketServer } from "./socket/socket_server.js";
-import { initApiRoutes } from "./api/api.js";
+import { app, server } from "./socket/initsocket.js";
+import userRoutes from './routes/userRoutes.js'
+import workspaceRouters from './routes/workspaceRoutes.js'
 import connectDB from "./db/dbconn.js";
-import dotenv from "dotenv";
 
-const app = express();
-dotenv.config();
-
+dotenv.config()
+app.use(express.json())
 app.use(cors({
-    origin: '*'
+  credentials:true
 }))
 
-app.use(express.urlencoded({ extended: true }))
-app.use(express.json())
+const PORT =process.env.PORT  || 8000 ;
+// console.log(process.env.MONGODB_URL)
+app.use('/api/user',userRoutes);
+app.use('/api/workspace',workspaceRouters)
 
-connectDB()
-initApiRoutes(app);
-initSocketServer(app);
+console.log("mongodb uri", process.env.MONGODB_URI);
+
+connectDB(process.env.MONGODB_URI);
+
+app.get("/", (req, res) => {
+  res.send("Hello, TypeScript with Node.js!");
+});
+
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});

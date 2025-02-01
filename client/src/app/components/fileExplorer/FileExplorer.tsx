@@ -1,9 +1,12 @@
-import React, { Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useCallback } from "react";
 import { useTraverseTree } from "@/hooks/useTraverseTree";
 import FileExplorerNode from "./FileExplorerNode";
 import { Typography } from "@mui/material";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
 import { IFile } from "@/interfaces/IFile";
+import { workspaceApi } from "@/services/workspaceApi";
+
+
 
 interface FileExplorerProps {
   fileExplorerData: IFileExplorerNode;
@@ -14,6 +17,8 @@ interface FileExplorerProps {
   setFiles: Dispatch<SetStateAction<IFile[]>>;
   isFileExplorerUpdated: boolean;
   setIsFileExplorerUpdated: Dispatch<SetStateAction<boolean>>;
+  roomId: string;
+  filesContentMap: Map<string, IFile>;
 }
 
 function FileExplorer({
@@ -25,8 +30,24 @@ function FileExplorer({
   setFiles,
   isFileExplorerUpdated,
   setIsFileExplorerUpdated,
+  roomId,
+  filesContentMap
 }: FileExplorerProps) {
   const { insertNode, deleteNode, renameNode, moveNode } = useTraverseTree();
+
+  const saveWorkspaceChanges = useCallback(async () => {
+    const payload = {
+      fileExplorerData,
+      openFiles: files,
+      activeFile,
+    };
+    try {
+      await workspaceApi.saveWorkspace(roomId, payload, filesContentMap);
+      setIsFileExplorerUpdated(false);
+    } catch (error) {
+      console.error('Error saving workspace:', error);
+    }
+  }, [fileExplorerData, files, activeFile, roomId, filesContentMap, setIsFileExplorerUpdated]);
 
   const handleInsertNode = (
     folderId: string,
@@ -40,6 +61,7 @@ function FileExplorer({
       isFolder
     );
     setFileExplorerData(updatedFileExplorerData);
+    setIsFileExplorerUpdated(true);
   };
 
   const handleDeleteNode = (nodeId: string, nodePath: string) => {
@@ -67,7 +89,6 @@ function FileExplorer({
     const updatedFileExplorerData = renameNode(nodeId, newName, fileExplorerData);
     setFileExplorerData(updatedFileExplorerData);
     
-    // Update open files paths and names if renamed file is open
     const updatedFiles = files.map(file => {
       if (file.path.includes(nodeId)) {
         const newPath = file.path.replace(file.name, newName);
@@ -77,11 +98,11 @@ function FileExplorer({
     });
     setFiles(updatedFiles);
 
-    // Update active file if it's the renamed one
     if (activeFile.path.includes(nodeId)) {
       const newPath = activeFile.path.replace(activeFile.name, newName);
       setActiveFile({ ...activeFile, name: newName, path: newPath });
     }
+    setIsFileExplorerUpdated(true);
   };
 
   const handleMove = (sourceId: string, targetId: string) => {
@@ -89,7 +110,6 @@ function FileExplorer({
     if (updatedFileExplorerData !== null) {
       setFileExplorerData(updatedFileExplorerData);
       
-      // Update paths of moved files in open files
       const findNewPath = (node: IFileExplorerNode): string | null => {
         if (node.id === sourceId) return node.path;
         for (const child of node.nodes) {
@@ -109,13 +129,19 @@ function FileExplorer({
         });
         setFiles(updatedFiles);
 
-        // Update active file path if it was moved
         if (activeFile.path.includes(sourceId)) {
           setActiveFile({ ...activeFile, path: newPath });
         }
       }
+      setIsFileExplorerUpdated(true);
     }
   };
+
+  useEffect(() => {
+    if (isFileExplorerUpdated) {
+      saveWorkspaceChanges();
+    }
+  }, [isFileExplorerUpdated, saveWorkspaceChanges]);
 
   return (
     <div className="text-[#aaaaaa] p-4">

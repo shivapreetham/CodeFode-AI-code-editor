@@ -3,17 +3,10 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Loading from "../loading/Loading";
+import { useEffect } from "react";
 
 const Header = () => {
   const { data: session, status } = useSession();
-
-  if (status === "loading") {
-    return (
-      <h2 className="text-white text-center py-5">
-        Fetching Session Details...
-      </h2>
-    );
-  }
 
   return (
     <header>

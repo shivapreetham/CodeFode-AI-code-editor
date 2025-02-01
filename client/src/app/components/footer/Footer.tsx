@@ -2,21 +2,21 @@ import React from "react";
 
 const Footer = () => {
   return (
-    <footer>
-      <div className="max-w-screen-xl px-4 py-12 mx-auto space-y-8 overflow-hidden sm:px-6 lg:px-8">
+    <footer className="bg-black/40 backdrop-blur-md border  w-dvw border-white/10 rounded-t-xl py-8 shadow-lg">
+      <div className="max-w-screen-xl px-4 py-6 mx-auto space-y-8 sm:px-6 lg:px-8">
         <nav className="flex flex-wrap justify-center -mx-5 -my-2">
           <div className="px-5 py-2">
             <a
-              href="#"
-              className="text-base leading-6 text-[#d1baba] hover:text-[var(--brand-color)]"
+              href="/helperPages/contact"
+              className="text-base leading-6 text-gray-300 hover:text-[#1e8f6e] transition-all duration-300"
             >
               Team
             </a>
           </div>
           <div className="px-5 py-2">
             <a
-              href="#"
-              className="text-base leading-6 text-[#d1baba] hover:text-[var(--brand-color)]"
+              href="/helperPages/contact"
+              className="text-base leading-6 text-gray-300 hover:text-[#1e8f6e] transition-all duration-300"
             >
               Contact
             </a>
@@ -25,11 +25,11 @@ const Footer = () => {
         <div className="flex justify-center mt-8 space-x-6">
           <a
             href="https://github.com/HiiiiiPritam/ai-code-editor"
-            className="text-[#d1baba] hover:text-[var(--brand-color)]"
+            className="text-gray-300 hover:text-[#1e8f6e] transition-all duration-300"
           >
             <span className="sr-only">GitHub</span>
             <svg
-              className="w-6 h-6"
+              className="w-6 h-6 hover:scale-110 transition-transform duration-300"
               aria-hidden="true"
               fill="currentColor"
               viewBox="0 0 24 24"
@@ -42,11 +42,9 @@ const Footer = () => {
             </svg>
           </a>
         </div>
-        <p className="mt-8 text-base leading-6 text-center text-[#d1baba]">
-          Made with <span className="inline-block animate_heart">❤️</span> by{" "}
-          <span className="text-[var(--brand-color)]">
-            Pritam, ShivaPreetam and Aditya
-          </span>
+        <p className="text-gray-300 text-center mt-6">
+          Made with ❤️ by{" "}
+          <span className="text-[#1e8f6e]">Pritam, ShivaPreetam, and Aditya</span>
         </p>
       </div>
     </footer>

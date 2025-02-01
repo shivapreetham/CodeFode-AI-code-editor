@@ -1,28 +1,51 @@
 .bg_full {
-  background: rgb(115, 33, 125);
-  background: radial-gradient(
-    circle,
-    rgba(90, 12, 100, 0.721) 47%,
-    #e22ace 97%
-  );
+  background: linear-gradient(65deg, #315a65, #1a7227, #134213);
+  background-size: 200% 100%;
+  animation: bg_move 2s infinite alternate ease-in-out;
+}
+
+@keyframes bg_move {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
 }
 
 .animate_heart {
-  animation: scale_heart 1s infinite;
+  animation: scale_heart 1s infinite ease-in-out;
+  display: inline-block;
+  color: #134213;
+  text-shadow: 0 0 10px rgba(255, 79, 79, 0.8);
 }
+
+.card {
+  @apply relative bg-[#585858] p-6 rounded-xl shadow-lg border border-gray-700 transition-all transform hover:scale-105 hover:shadow-2xl;
+  animation: floatCard 4s infinite ease-in-out;
+}
+
+.icon {
+  @apply flex items-center justify-center w-12 h-12 text-white text-2xl rounded-full mb-4 shadow-lg;
+}
+
+/* Floating Animations */
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
 
 @keyframes scale_heart {
   0%, 100% {
-      transform: scale(0.75);  
-  }
-  25% {
-      transform: scale(1);
+    transform: scale(0.9);
   }
   50% {
-    transform: scale(1.25);
-  }
-  75% {
-    transform: scale(1);
+    transform: scale(1.2);
   }
 }
 
+/* Additional styling for a glowing effect */
+.text-glow {
+  text-shadow: 0 0 10px rgba(96, 132, 115, 0.7);
+}

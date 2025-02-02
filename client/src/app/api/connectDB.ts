@@ -7,7 +7,7 @@ export default async function connectDB() {
       return;
     }
 
-    const dbUri = process.env.MONGODB_URI;
+    const dbUri = process.env.MONGODB_URL;
     if (!dbUri) {
       throw new Error("MONGODB_URL is not defined in environment variables");
     }

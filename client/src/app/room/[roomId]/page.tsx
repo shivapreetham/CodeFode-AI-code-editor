@@ -36,7 +36,7 @@ const filesContentMap = new Map<string, IFile>();
 const initialActiveFile = {
   name: "index.js",
   language: "javascript",
-  content: `console.log(\`You are awesome 🤟\)`,
+  content: `console.log(\`You are awesome 🤟\`)`,
   path: "/root/index.js",
 };
 

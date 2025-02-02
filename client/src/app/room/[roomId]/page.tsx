@@ -29,6 +29,7 @@ import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ThemeSwitcher from "@/app/components/theme/ThemeComp";
 import { ThemeContext } from "@/context/ThemeContext";
+import { FontSizeContext } from "@/context/FontSizeContext";
 
 
 const filesContentMap = new Map<string, IFile>();
@@ -49,6 +50,7 @@ const Page = () => {
   const router = useRouter();
   const { messages, setMessages } = useContext(ChatContext);
   const {theme, setTheme} = useContext(ThemeContext);
+  const {fontSize, setFontSize} = useContext(FontSizeContext);
 
   const { roomId } = params;
 
@@ -473,7 +475,7 @@ function handleEditorChange(content: string | undefined) {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 3 ? "#ffe200" : "#8c7f91",
+            color: activeTab === 4 ? "#ffe200" : "#8c7f91",
             "&:hover": { color: "#ffe200" },
           }}
         />
@@ -549,7 +551,7 @@ function handleEditorChange(content: string | undefined) {
                 minimap: {
                   enabled: false,
                 },
-                fontSize: 18,
+                fontSize:fontSize,
                 cursorStyle: "line",
                 lineNumbersMinChars: 4,
                 quickSuggestions: true,

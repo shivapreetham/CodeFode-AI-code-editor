@@ -1,131 +1,224 @@
 import { cohere } from '@ai-sdk/cohere';
 import { generateText } from 'ai';
 
-const parseAnalysisResponse = (analysis) => {
-  const suggestions = [];
+const parseErrorResponse = (text) => {
   const errors = [];
+  // Split by ERROR: but keep the first part if it contains relevant content
+  const errorBlocks = text.split(/(?=ERROR:)/).filter(block => block.trim());
   
-  const sections = analysis.split('\n\n');
-  let currentSection = '';
-  
-  for (const section of sections) {
-    if (section.startsWith('SUGGESTIONS:')) {
-      currentSection = 'suggestions';
-      continue;
-    } else if (section.startsWith('ERRORS:')) {
-      currentSection = 'errors';
-      continue;
+  for (const block of errorBlocks) {
+    const error = {};
+    const lines = block.split('\n');
+    
+    // Process each line
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.startsWith('TITLE:')) {
+        error.title = line.substring(6).trim();
+      } else if (line.startsWith('LINE:')) {
+        error.line = line.substring(5).trim();
+      } else if (line.startsWith('CODE:')) {
+        error.code = line.substring(5).trim();
+        // Check if next lines are continuation of code
+        while (i + 1 < lines.length && 
+               !lines[i + 1].trim().startsWith('FIXED_CODE:') && 
+               !lines[i + 1].trim().startsWith('DESCRIPTION:')) {
+          const nextLine = lines[i + 1].trim();
+          if (nextLine && !nextLine.startsWith('```')) {
+            error.code += '\n' + nextLine;
+          }
+          i++;
+        }
+      } else if (line.startsWith('FIXED_CODE:')) {
+        error.fixedCode = line.substring(10).trim();
+        // Check if next lines are continuation of fixed code
+        while (i + 1 < lines.length && 
+               !lines[i + 1].trim().startsWith('DESCRIPTION:')) {
+          const nextLine = lines[i + 1].trim();
+          if (nextLine && !nextLine.startsWith('```')) {
+            error.fixedCode += '\n' + nextLine;
+          }
+          i++;
+        }
+      } else if (line.startsWith('DESCRIPTION:')) {
+        error.description = line.substring(12).trim();
+        // Gather all remaining lines as part of description until next error
+        while (i + 1 < lines.length && !lines[i + 1].trim().startsWith('ERROR:')) {
+          const nextLine = lines[i + 1].trim();
+          if (nextLine && !nextLine.startsWith('```')) {
+            error.description += ' ' + nextLine;
+          }
+          i++;
+        }
+      }
     }
-
-    const lines = section.split('\n');
-    if (currentSection === 'suggestions') {
-      const suggestion = {};
-      for (const line of lines) {
-        if (line.startsWith('- Title:')) {
-          suggestion.title = line.replace('- Title:', '').trim();
-        } else if (line.startsWith('- Code:')) {
-          suggestion.code = line.replace('- Code:', '').trim();
-        } else if (line.startsWith('- Explanation:')) {
-          suggestion.explanation = line.replace('- Explanation:', '').trim();
-        }
-      }
-      if (suggestion.title && suggestion.code) {
-        suggestions.push(suggestion);
-      }
-    } else if (currentSection === 'errors') {
-      const error = {};
-      for (const line of lines) {
-        if (line.startsWith('- Title:')) {
-          error.title = line.replace('- Title:', '').trim();
-        } else if (line.startsWith('- Description:')) {
-          error.description = line.replace('- Description:', '').trim();
-        } else if (line.startsWith('- Suggestion:')) {
-          error.suggestion = line.replace('- Suggestion:', '').trim();
-        }
-      }
-      if (error.title && error.description) {
-        errors.push(error);
-      }
+    
+    // Only add if we have all required fields
+    if (error.title && error.line && error.code && error.fixedCode && error.description) {
+      // Clean up any remaining markdown or code block syntax
+      error.code = error.code.replace(/```[a-z]*\n?/g, '').trim();
+      error.fixedCode = error.fixedCode.replace(/```[a-z]*\n?/g, '').trim();
+      errors.push(error);
     }
   }
-
-  return { suggestions, errors };
+  
+  return errors;
+};
+const parseSuggestions = (text) => {
+  const suggestions = [];
+  // Match both SUGGESTION: and ## SUGGESTION: patterns
+  const suggestionBlocks = text.split(/\n(?:##\s*)?SUGGESTION:/).filter(block => block.trim());
+  
+  for (const block of suggestionBlocks) {
+    const lines = block.split('\n');
+    const suggestion = {};
+    let inCodeBlock = false;
+    let currentField = '';
+    
+    for (const line of lines) {
+      // Remove markdown headers if present
+      const cleanLine = line.replace(/^###?\s*/, '');
+      
+      if (cleanLine.startsWith('TITLE:')) {
+        suggestion.title = cleanLine.replace('TITLE:', '').trim();
+      } else if (cleanLine.startsWith('CODE:')) {
+        currentField = 'code';
+        suggestion.code = '';
+        inCodeBlock = false;
+      } else if (cleanLine.startsWith('EXPLANATION:')) {
+        currentField = 'explanation';
+        suggestion.explanation = cleanLine.replace('EXPLANATION:', '').trim();
+      } else if (cleanLine.trim().startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+      } else if (inCodeBlock && currentField === 'code') {
+        suggestion.code = (suggestion.code + '\n' + cleanLine).trim();
+      } else if (currentField === 'explanation' && !cleanLine.trim().startsWith('```')) {
+        suggestion.explanation = (suggestion.explanation + ' ' + cleanLine.trim()).trim();
+      }
+    }
+    
+    if (suggestion.title && suggestion.code && suggestion.explanation) {
+      // Remove any remaining markdown code block syntax
+      suggestion.code = suggestion.code.replace(/```[a-z]*\n?/g, '').trim();
+      suggestions.push(suggestion);
+    }
+  }
+  return suggestions;
 };
 
-const parseSuggestionResponse = (text) => {
-  const lines = text.split('\n');
-  let suggestion = '';
-  let explanation = '';
-
-  for (const line of lines) {
-    if (line.startsWith('SUGGESTION:')) {
-      suggestion = line.replace('SUGGESTION:', '').trim();
-    } else if (line.startsWith('EXPLANATION:')) {
-      explanation = line.replace('EXPLANATION:', '').trim();
+const parsePractices = (text) => {
+  const practices = [];
+  // Match both PRACTICE: and ## Practice patterns (case insensitive)
+  const practiceBlocks = text.split(/\n(?:##\s*)?(?:PRACTICE|Practice)\s*\d*:?/).filter(block => block.trim());
+  
+  for (const block of practiceBlocks) {
+    const lines = block.split('\n');
+    const practice = {};
+    let inCodeBlock = false;
+    let currentField = '';
+    
+    for (const line of lines) {
+      // Remove markdown headers if present
+      const cleanLine = line.replace(/^###?\s*/, '');
+      
+      if (cleanLine.startsWith('TITLE:') || cleanLine.startsWith('Title:')) {
+        practice.title = cleanLine.replace(/(?:TITLE|Title):/, '').trim();
+      } else if (cleanLine.startsWith('CODE:') || cleanLine.startsWith('Code:')) {
+        currentField = 'code';
+        practice.code = '';
+        inCodeBlock = false;
+      } else if (cleanLine.startsWith('EXPLANATION:') || cleanLine.startsWith('Explanation:')) {
+        currentField = 'explanation';
+        practice.explanation = cleanLine.replace(/(?:EXPLANATION|Explanation):/, '').trim();
+      } else if (cleanLine.trim().startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+      } else if (inCodeBlock && currentField === 'code') {
+        practice.code = (practice.code + '\n' + cleanLine).trim();
+      } else if (currentField === 'explanation' && !cleanLine.trim().startsWith('```')) {
+        practice.explanation = (practice.explanation + ' ' + cleanLine.trim()).trim();
+      }
+    }
+    
+    // Also handle cases where title is in a markdown header
+    if (!practice.title) {
+      const titleMatch = block.match(/(?:##|###)\s*([^:\n]+?)(?:\n|$)/);
+      if (titleMatch) practice.title = titleMatch[1].trim();
+    }
+    
+    if (practice.title && practice.code && practice.explanation) {
+      // Remove any remaining markdown code block syntax
+      practice.code = practice.code.replace(/```[a-z]*\n?/g, '').trim();
+      practices.push(practice);
     }
   }
-
-  return { suggestion, explanation };
+  return practices;
 };
 
 export const processCodeWithAI = async (code, language) => {
   try {
-    const [analysisResponse, suggestionResponse, fixResponse] = await Promise.all([
-      // Analysis request
+    const [errorResponse, suggestionResponse, practiceResponse] = await Promise.all([
+      // Error analysis request
       generateText({
         model: cohere('command-r-plus'),
-        prompt: `You are an expert code reviewer and AI programming assistant. Analyze the following ${language} code and provide:
-        1. Potential improvements
-        2. Any errors or issues
-        3. Best practices that could be applied
-        
-        Format your response as follows:
-        SUGGESTIONS:
-        - Title: [improvement title]
-        - Code: [code snippet]
-        - Explanation: [explanation]
+        prompt: `As an expert ${language} code reviewer, analyze this code and identify all errors.
+        For each error, provide:
+        ERROR:
+        TITLE: [Brief error title]
+        LINE: [Line number or range]
+        CODE: [Problematic code]
+        FIXED_CODE: [Corrected code]
+        DESCRIPTION: [Detailed explanation]
 
-        ERRORS:
-        - Title: [error title]
-        - Description: [error description]
-        - Suggestion: [fix suggestion]
-        
-        Code to analyze:
+        Analyze this code:
         ${code}`
       }),
 
-      // Suggestion request
+      // Code suggestions request
       generateText({
         model: cohere('command-r-plus'),
-        prompt: `You are an expert ${language} programmer. Based on the following code context, suggest the next logical piece of code that would be helpful. 
-        Provide your response in this format:
-        SUGGESTION: [your code suggestion]
-        EXPLANATION: [brief explanation]
-        
+        prompt: `As an expert ${language} programmer, provide exactly 3 suggestions for additional code that would enhance this codebase.
+        Each suggestion should be 2-10 lines of code.
+        Format each suggestion as:
+        SUGGESTION:
+        TITLE: [Brief title]
+        CODE: [Your suggested code]
+        EXPLANATION: [Why this would be helpful]
+
         Code context:
         ${code}`
       }),
 
-      // Fix request
+      // Best practices request
       generateText({
         model: cohere('command-r-plus'),
-        prompt: `As an expert ${language} developer, provide a complete, improved version of this code.
-        Fix all issues, apply best practices, and optimize performance.
-        Return ONLY the complete, fixed code without any explanations.
-        Ensure the fixed code is complete and can work as a drop-in replacement.
-        
-        Original code:
+        prompt: `As an expert ${language} developer, suggest exactly 2 best practices that could improve this code.
+        Each practice should include 2-20 lines of example code.
+        Format as:
+        PRACTICE:
+        TITLE: [Practice title]
+        CODE: [Example code]
+        EXPLANATION: [Detailed explanation]
+
+        Analyze this code:
         ${code}`
       })
     ]);
 
-    console.log(analysisResponse.text, suggestionResponse.text, fixResponse.text);
-    return {
-      analysis: parseAnalysisResponse(analysisResponse.text),
-      suggestion: parseSuggestionResponse(suggestionResponse.text),
-      fixedCode: fixResponse.text.trim(),
+    console.log('Raw Responses:', {
+      error: errorResponse.text,
+      suggestion: suggestionResponse.text,
+      practice: practiceResponse.text
+    });
+
+    const response = {
+      errors: parseErrorResponse(errorResponse.text),
+      suggestions: parseSuggestions(suggestionResponse.text),
+      bestPractices: parsePractices(practiceResponse.text),
       timestamp: new Date().toISOString()
     };
+    
+    return response;
   } catch (error) {
     console.error('Error in AI code processing:', error);
     throw new Error('Failed to process code with AI');

@@ -1,28 +1,30 @@
 import { useState } from 'react';
 import axios, { AxiosError } from 'axios';
 
+export interface Error {
+  title: string;
+  line: string;
+  code: string;
+  fixedCode: string;
+  description: string;
+}
+
 export interface Suggestion {
   title: string;
   code: string;
   explanation: string;
 }
 
-export interface Error {
+export interface Practice {
   title: string;
-  description: string;
-  suggestion: string;
+  code: string;
+  explanation: string;
 }
 
 export interface AIResponse {
-  analysis: {
-    suggestions: Suggestion[];
-    errors: Error[];
-  };
-  suggestion: {
-    suggestion: string;
-    explanation: string;
-  };
-  fixedCode: string;
+  errors: Error[];
+  suggestions: Suggestion[];
+  bestPractices: Practice[];
   timestamp: string;
 }
 
@@ -52,7 +54,7 @@ export const useAISuggestions = ({ enabled }: UseAISuggestionsProps) => {
       );
 
       setAIResponse(response.data);
-
+      console.log(response.data)
     } catch (err) {
       let errorMessage = 'Failed to analyze code';
       
@@ -73,7 +75,7 @@ export const useAISuggestions = ({ enabled }: UseAISuggestionsProps) => {
       setIsLoading(false);
     }
   };
-
+  console.log(aiResponse)
   return {
     isLoading,
     aiResponse,

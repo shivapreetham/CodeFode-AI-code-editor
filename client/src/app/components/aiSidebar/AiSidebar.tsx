@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Bug, Lightbulb, Code, ChevronDown, ChevronUp } from 'lucide-react';
+import CodeBlock from './codeBlock';
 
 interface Error {
   title: string;
@@ -38,10 +39,6 @@ interface SectionProps {
   children: React.ReactNode;
   isExpanded: boolean;
   onToggle: () => void;
-}
-
-interface CodeBlockProps {
-  code: string;
 }
 
 interface ExpandedSections {
@@ -104,16 +101,8 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
     </div>
   );
 
-  const CodeBlock: React.FC<CodeBlockProps> = ({ code }) => (
-    <div className="relative group">
-      <pre className="text-sm bg-black/50 p-3 rounded-md overflow-x-auto">
-        <code className="text-zinc-200">{code}</code>
-      </pre>
-    </div>
-  );
-
   return (
-    <div className="w-96 h-screen bg-zinc-900 border-l border-zinc-800 overflow-y-auto">
+    <div className="w-full md:w-[32rem] lg:w-[27.5rem] h-screen bg-zinc-900 border-l border-zinc-800 overflow-y-auto transition-all duration-300">
       <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 p-4">
         <div className="flex items-center gap-2 text-yellow-400">
           <Sparkles className="w-5 h-5" />
@@ -121,7 +110,7 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 max-w-full">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-8 space-y-4">
             <div className="w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />

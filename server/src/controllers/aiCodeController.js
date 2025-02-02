@@ -109,14 +109,17 @@ export const processCodeWithAI = async (code, language) => {
       // Fix request
       generateText({
         model: cohere('command-r-plus'),
-        prompt: `Review and fix the following ${language} code. Fix any errors, improve code quality, and apply best practices.
-        Provide only the corrected code without explanations.
+        prompt: `As an expert ${language} developer, provide a complete, improved version of this code.
+        Fix all issues, apply best practices, and optimize performance.
+        Return ONLY the complete, fixed code without any explanations.
+        Ensure the fixed code is complete and can work as a drop-in replacement.
         
-        Code to fix:
+        Original code:
         ${code}`
       })
     ]);
 
+    console.log(analysisResponse.text, suggestionResponse.text, fixResponse.text);
     return {
       analysis: parseAnalysisResponse(analysisResponse.text),
       suggestion: parseSuggestionResponse(suggestionResponse.text),

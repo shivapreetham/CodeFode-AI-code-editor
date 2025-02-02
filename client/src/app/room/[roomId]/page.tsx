@@ -25,7 +25,7 @@ import { ChatContext } from "@/context/ChatContext";
 import { useDebounceCallback } from 'usehooks-ts';
 import { workspaceApi } from "@/services/workspaceApi";
 import { useAISuggestions } from "@/hooks/useAISuggestion";
-import AiSuggestionSidebar from "@/app/components/AiSidebar";
+import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ThemeSwitcher from "@/app/components/theme/ThemeComp";
 import { ThemeContext } from "@/context/ThemeContext";

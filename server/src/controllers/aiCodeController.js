@@ -3,24 +3,18 @@ import { generateText } from 'ai';
 
 const parseErrorResponse = (text) => {
   const errors = [];
-  // Split by ERROR: but keep the first part if it contains relevant content
   const errorBlocks = text.split(/(?=ERROR:)/).filter(block => block.trim());
-  
   for (const block of errorBlocks) {
     const error = {};
     const lines = block.split('\n');
-    
-    // Process each line
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      
       if (line.startsWith('TITLE:')) {
         error.title = line.substring(6).trim();
       } else if (line.startsWith('LINE:')) {
         error.line = line.substring(5).trim();
       } else if (line.startsWith('CODE:')) {
         error.code = line.substring(5).trim();
-        // Check if next lines are continuation of code
         while (i + 1 < lines.length && 
                !lines[i + 1].trim().startsWith('FIXED_CODE:') && 
                !lines[i + 1].trim().startsWith('DESCRIPTION:')) {
@@ -32,7 +26,6 @@ const parseErrorResponse = (text) => {
         }
       } else if (line.startsWith('FIXED_CODE:')) {
         error.fixedCode = line.substring(10).trim();
-        // Check if next lines are continuation of fixed code
         while (i + 1 < lines.length && 
                !lines[i + 1].trim().startsWith('DESCRIPTION:')) {
           const nextLine = lines[i + 1].trim();
@@ -43,7 +36,6 @@ const parseErrorResponse = (text) => {
         }
       } else if (line.startsWith('DESCRIPTION:')) {
         error.description = line.substring(12).trim();
-        // Gather all remaining lines as part of description until next error
         while (i + 1 < lines.length && !lines[i + 1].trim().startsWith('ERROR:')) {
           const nextLine = lines[i + 1].trim();
           if (nextLine && !nextLine.startsWith('```')) {
@@ -53,10 +45,7 @@ const parseErrorResponse = (text) => {
         }
       }
     }
-    
-    // Only add if we have all required fields
     if (error.title && error.line && error.code && error.fixedCode && error.description) {
-      // Clean up any remaining markdown or code block syntax
       error.code = error.code.replace(/```[a-z]*\n?/g, '').trim();
       error.fixedCode = error.fixedCode.replace(/```[a-z]*\n?/g, '').trim();
       errors.push(error);
@@ -67,9 +56,7 @@ const parseErrorResponse = (text) => {
 };
 const parseSuggestions = (text) => {
   const suggestions = [];
-  // Match both SUGGESTION: and ## SUGGESTION: patterns
   const suggestionBlocks = text.split(/\n(?:##\s*)?SUGGESTION:/).filter(block => block.trim());
-  
   for (const block of suggestionBlocks) {
     const lines = block.split('\n');
     const suggestion = {};
@@ -77,9 +64,7 @@ const parseSuggestions = (text) => {
     let currentField = '';
     
     for (const line of lines) {
-      // Remove markdown headers if present
       const cleanLine = line.replace(/^###?\s*/, '');
-      
       if (cleanLine.startsWith('TITLE:')) {
         suggestion.title = cleanLine.replace('TITLE:', '').trim();
       } else if (cleanLine.startsWith('CODE:')) {
@@ -97,19 +82,15 @@ const parseSuggestions = (text) => {
         suggestion.explanation = (suggestion.explanation + ' ' + cleanLine.trim()).trim();
       }
     }
-    
     if (suggestion.title && suggestion.code && suggestion.explanation) {
-      // Remove any remaining markdown code block syntax
       suggestion.code = suggestion.code.replace(/```[a-z]*\n?/g, '').trim();
       suggestions.push(suggestion);
     }
   }
   return suggestions;
 };
-
 const parsePractices = (text) => {
   const practices = [];
-  // Match both PRACTICE: and ## Practice patterns (case insensitive)
   const practiceBlocks = text.split(/\n(?:##\s*)?(?:PRACTICE|Practice)\s*\d*:?/).filter(block => block.trim());
   
   for (const block of practiceBlocks) {
@@ -119,9 +100,7 @@ const parsePractices = (text) => {
     let currentField = '';
     
     for (const line of lines) {
-      // Remove markdown headers if present
       const cleanLine = line.replace(/^###?\s*/, '');
-      
       if (cleanLine.startsWith('TITLE:') || cleanLine.startsWith('Title:')) {
         practice.title = cleanLine.replace(/(?:TITLE|Title):/, '').trim();
       } else if (cleanLine.startsWith('CODE:') || cleanLine.startsWith('Code:')) {
@@ -140,14 +119,11 @@ const parsePractices = (text) => {
       }
     }
     
-    // Also handle cases where title is in a markdown header
     if (!practice.title) {
       const titleMatch = block.match(/(?:##|###)\s*([^:\n]+?)(?:\n|$)/);
       if (titleMatch) practice.title = titleMatch[1].trim();
     }
-    
     if (practice.title && practice.code && practice.explanation) {
-      // Remove any remaining markdown code block syntax
       practice.code = practice.code.replace(/```[a-z]*\n?/g, '').trim();
       practices.push(practice);
     }
@@ -158,7 +134,6 @@ const parsePractices = (text) => {
 export const processCodeWithAI = async (code, language) => {
   try {
     const [errorResponse, suggestionResponse, practiceResponse] = await Promise.all([
-      // Error analysis request
       generateText({
         model: cohere('command-r-plus'),
         prompt: `As an expert ${language} code reviewer, analyze this code and identify all errors.
@@ -174,7 +149,6 @@ export const processCodeWithAI = async (code, language) => {
         ${code}`
       }),
 
-      // Code suggestions request
       generateText({
         model: cohere('command-r-plus'),
         prompt: `As an expert ${language} programmer, provide exactly 3 suggestions for additional code that would enhance this codebase.
@@ -189,7 +163,6 @@ export const processCodeWithAI = async (code, language) => {
         ${code}`
       }),
 
-      // Best practices request
       generateText({
         model: cohere('command-r-plus'),
         prompt: `As an expert ${language} developer, suggest exactly 2 best practices that could improve this code.
@@ -205,11 +178,11 @@ export const processCodeWithAI = async (code, language) => {
       })
     ]);
 
-    console.log('Raw Responses:', {
-      error: errorResponse.text,
-      suggestion: suggestionResponse.text,
-      practice: practiceResponse.text
-    });
+    // console.log('Raw Responses:', {
+    //   error: errorResponse.text,
+    //   suggestion: suggestionResponse.text,
+    //   practice: practiceResponse.text
+    // });
 
     const response = {
       errors: parseErrorResponse(errorResponse.text),

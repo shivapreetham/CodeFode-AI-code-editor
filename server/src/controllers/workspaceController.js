@@ -5,13 +5,13 @@ export const createOrUpdateWorkspace = async (req, res) => {
   
   try {
     const { roomId, fileExplorerData, openFiles, activeFile, filesContent } = req.body;
-    console.log("Received data:", {
-      roomId,
-      fileExplorerDataSize: fileExplorerData ? Object.keys(fileExplorerData).length : 0,
-      openFilesCount: openFiles?.length,
-      activeFile: activeFile?.name,
-      filesContentCount: filesContent?.length
-    });
+    // console.log("Received data:", {
+    //   roomId,
+    //   fileExplorerDataSize: fileExplorerData ? Object.keys(fileExplorerData).length : 0,
+    //   openFilesCount: openFiles?.length,
+    //   activeFile: activeFile?.name,
+    //   filesContentCount: filesContent?.length
+    // });
 
     if (!roomId) {
       return res.status(400).json({ error: "Room ID is required" });
@@ -55,7 +55,7 @@ export const createOrUpdateWorkspace = async (req, res) => {
       }
     );
     
-    console.log('Workspace updated successfully:', workspace._id);
+    // console.log('Workspace updated successfully:', workspace._id);
     return res.status(200).json(workspace);
   } catch (error) {
     console.error("Workspace save error:", error);

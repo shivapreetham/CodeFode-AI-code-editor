@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Sparkles, Bug, Lightbulb, Code, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, Bug, Lightbulb, Code, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import CodeBlock from './codeBlock';
 
 interface Error {
   title: string;
+  line: string;
+  code: string;
+  fixedCode: string;
   description: string;
-  suggestion: string;
 }
 
 interface Suggestion {
@@ -14,15 +16,16 @@ interface Suggestion {
   explanation: string;
 }
 
+interface Practice {
+  title: string;
+  code: string;
+  explanation: string;
+}
+
 interface AIResponse {
-  analysis: {
-    errors: Error[];
-    suggestions: Suggestion[];
-  };
-  suggestion: {
-    suggestion: string;
-    explanation: string;
-  } | null;
+  errors: Error[];
+  suggestions: Suggestion[];
+  bestPractices: Practice[];
   timestamp: string;
 }
 
@@ -30,12 +33,13 @@ interface AISuggestionsSidebarProps {
   isOpen: boolean;
   aiResponse?: AIResponse;
   isLoading: boolean;
+  error?: string | null;
 }
 
 interface SectionProps {
   title: string;
   icon: React.ElementType;
-  type: 'error' | 'suggestion' | 'improvement';
+  type: 'error' | 'suggestion' | 'practice';
   children: React.ReactNode;
   isExpanded: boolean;
   onToggle: () => void;
@@ -44,18 +48,19 @@ interface SectionProps {
 interface ExpandedSections {
   errors: boolean;
   suggestions: boolean;
-  improvements: boolean;
+  practices: boolean;
 }
 
 const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({ 
   isOpen, 
   aiResponse, 
-  isLoading 
+  isLoading,
+  error 
 }) => {
   const [expandedSections, setExpandedSections] = useState<ExpandedSections>({
     errors: true,
     suggestions: true,
-    improvements: true
+    practices: true
   });
 
   const toggleSection = (section: keyof ExpandedSections): void => {
@@ -81,13 +86,13 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
         className={`w-full p-3 flex items-center justify-between text-left
           ${type === 'error' ? 'bg-red-900/20' : ''}
           ${type === 'suggestion' ? 'bg-blue-900/20' : ''}
-          ${type === 'improvement' ? 'bg-emerald-900/20' : ''}`}
+          ${type === 'practice' ? 'bg-emerald-900/20' : ''}`}
       >
         <div className="flex items-center gap-2">
           <Icon className={`w-5 h-5 
             ${type === 'error' ? 'text-red-400' : ''}
             ${type === 'suggestion' ? 'text-blue-400' : ''}
-            ${type === 'improvement' ? 'text-emerald-400' : ''}`} 
+            ${type === 'practice' ? 'text-emerald-400' : ''}`} 
           />
           <span className="font-medium text-zinc-100">{title}</span>
         </div>
@@ -111,40 +116,53 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
       </div>
 
       <div className="p-4 max-w-full">
-        {isLoading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center p-8 space-y-3 text-red-400">
+            <Bug className="w-8 h-8" />
+            <p>{error}</p>
+          </div>
+        ) : isLoading ? (
           <div className="flex flex-col items-center justify-center p-8 space-y-4">
             <div className="w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
             <p className="text-zinc-400">Analyzing your code...</p>
           </div>
         ) : aiResponse ? (
           <div className="space-y-6">
-            {aiResponse.analysis.errors.length > 0 && (
+            {aiResponse.errors.length > 0 && (
               <Section
-                title={`Issues Found (${aiResponse.analysis.errors.length})`}
+                title={`Issues Found (${aiResponse.errors.length})`}
                 icon={Bug}
                 type="error"
                 isExpanded={expandedSections.errors}
                 onToggle={() => toggleSection('errors')}
               >
-                {aiResponse.analysis.errors.map((error, idx) => (
+                {aiResponse.errors.map((error, idx) => (
                   <div key={idx} className="space-y-2">
                     <h4 className="text-red-400 font-medium">{error.title}</h4>
-                    <p className="text-sm text-zinc-300">{error.description}</p>
-                    <div className="text-sm text-emerald-400">{error.suggestion}</div>
+                    <p className="text-sm text-zinc-400">Line: {error.line}</p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-zinc-300">{error.description}</p>
+                      <div className="bg-red-900/20 p-2 rounded">
+                        <p className="text-sm text-red-400 font-mono">{error.code}</p>
+                      </div>
+                      <div className="bg-emerald-900/20 p-2 rounded">
+                        <p className="text-sm text-emerald-400 font-mono">{error.fixedCode}</p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </Section>
             )}
 
-            {aiResponse.analysis.suggestions.length > 0 && (
+            {aiResponse.suggestions.length > 0 && (
               <Section
-                title={`Suggestions (${aiResponse.analysis.suggestions.length})`}
+                title={`Suggestions (${aiResponse.suggestions.length})`}
                 icon={Lightbulb}
                 type="suggestion"
                 isExpanded={expandedSections.suggestions}
                 onToggle={() => toggleSection('suggestions')}
               >
-                {aiResponse.analysis.suggestions.map((suggestion, idx) => (
+                {aiResponse.suggestions.map((suggestion, idx) => (
                   <div key={idx} className="space-y-2">
                     <h4 className="text-blue-400 font-medium">{suggestion.title}</h4>
                     <CodeBlock code={suggestion.code} />
@@ -154,18 +172,21 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
               </Section>
             )}
 
-            {aiResponse.suggestion && (
+            {aiResponse.bestPractices.length > 0 && (
               <Section
-                title="Recommended Improvement"
-                icon={Code}
-                type="improvement"
-                isExpanded={expandedSections.improvements}
-                onToggle={() => toggleSection('improvements')}
+                title={`Best Practices (${aiResponse.bestPractices.length})`}
+                icon={CheckCircle}
+                type="practice"
+                isExpanded={expandedSections.practices}
+                onToggle={() => toggleSection('practices')}
               >
-                <div className="space-y-2">
-                  <CodeBlock code={aiResponse.suggestion.suggestion} />
-                  <p className="text-sm text-zinc-300">{aiResponse.suggestion.explanation}</p>
-                </div>
+                {aiResponse.bestPractices.map((practice, idx) => (
+                  <div key={idx} className="space-y-2">
+                    <h4 className="text-emerald-400 font-medium">{practice.title}</h4>
+                    <CodeBlock code={practice.code} />
+                    <p className="text-sm text-zinc-300">{practice.explanation}</p>
+                  </div>
+                ))}
               </Section>
             )}
           </div>

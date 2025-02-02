@@ -85,8 +85,6 @@ const Page = () => {
     enabled: activeTab === 4
   });
   
-
-
   const handleKeyboardShortcuts = (e: KeyboardEvent) => {
     if (e.ctrlKey) {
       switch (e.key.toLowerCase()) {
@@ -121,7 +119,7 @@ const Page = () => {
       window.removeEventListener('keydown', handleKeyboardShortcuts);
     };
   }, []);
-  
+
   const debouncedSaveAndEmit = useDebounceCallback(
     (content: string, socketRef: any, roomId: string | string[], activeFile: IFile, fileExplorerData: IFileExplorerNode, files: IFile[]) => {
       const updatedActiveFile = {

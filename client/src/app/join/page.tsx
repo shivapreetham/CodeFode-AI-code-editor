@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 
+
 export default function Home() {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
@@ -23,6 +24,11 @@ export default function Home() {
 
   const router = useRouter();
 
+  useEffect(() => {
+    if (status === "authenticated") setUsername(session?.user?.email as string);
+    else if(status=='loading')setUsername("Please Wait..")
+    else setUsername("You Need to login");
+  }, [status]);
   const notify = () => {
     toast.success("New room Id created successfully.");
   };
@@ -35,10 +41,6 @@ export default function Home() {
 
   const handleRoomId = (e: FormEvent<HTMLInputElement>) => {
     setRoomId(e.currentTarget.value);
-  };
-
-  const handleUsername = (e: FormEvent<HTMLInputElement>) => {
-    setUsername(e.currentTarget.value);
   };
 
   const handleJoinRoom = (e: FormEvent<HTMLFormElement>) => {
@@ -96,7 +98,7 @@ export default function Home() {
           onKeyUp={(e) => handleInputEnter(e)}
         >
           <h5 className="text-3xl font-semibold text-white">Join Room</h5>
-          
+
           <div>
             <label
               htmlFor="roomId"
@@ -124,12 +126,12 @@ export default function Home() {
             </label>
             <input
               value={username}
-              onChange={handleUsername}
               type="text"
               id="username"
               placeholder="Enter your username"
               className="outline-none bg-gray-100/50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 block w-full p-3 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
               required
+              readOnly
             />
           </div>
 
@@ -141,7 +143,7 @@ export default function Home() {
           </button>
 
           <div className="text-sm font-medium text-gray-500 dark:text-gray-300">
-          Don&apos;t have an invitation?{" "}
+            Don&apos;t have an invitation?{" "}
             <span
               onClick={handleCreateRoom}
               className="cursor-pointer text-pink-500 hover:underline"

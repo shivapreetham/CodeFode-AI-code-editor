@@ -12,7 +12,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
-import { stat } from "fs";
+
 
 export default function Home() {
   const [roomId, setRoomId] = useState("");
@@ -27,7 +27,7 @@ export default function Home() {
   useEffect(() => {
     if (status === "authenticated") setUsername(session?.user?.email as string);
     else setUsername("");
-  }, []);
+  }, [status]);
   const notify = () => {
     toast.success("New room Id created successfully.");
   };

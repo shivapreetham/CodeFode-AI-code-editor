@@ -12,12 +12,15 @@
   "author": "abhishekmaran",
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/cohere": "^1.1.6",
+    "ai": "^4.1.16",
     "bull": "^4.16.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.18.3",
     "mongoose": "^8.6.0",
-    "socket.io": "^4.7.4"
+    "socket.io": "^4.7.4",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

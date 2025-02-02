@@ -24,6 +24,9 @@ import Chat, { Message } from "@/app/components/chat/Chat";
 import { ChatContext } from "@/context/ChatContext";
 import { useDebounceCallback } from 'usehooks-ts';
 import { workspaceApi } from "@/services/workspaceApi";
+import { useAISuggestions } from "@/hooks/useAISuggestion";
+import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ThemeSwitcher from "@/app/components/theme/ThemeComp";
 import { ThemeContext } from "@/context/ThemeContext";
 
@@ -77,33 +80,39 @@ const Page = () => {
   const editorRef = useRef(null);
   const socketRef = useRef<Socket | null>(null);
 
-
-
-
-// Inside your component:
-const debouncedSaveAndEmit = useDebounceCallback(
-  (content: string, socketRef: any, roomId: string | string[], activeFile: IFile, fileExplorerData: IFileExplorerNode, files: IFile[]) => {
-    const updatedActiveFile = {
-      ...activeFile,
-      content: content,
-    };
+  const { isLoading: aiLoading, aiResponse, fetchSuggestions } = useAISuggestions({
+    enabled: activeTab === 4
+  });
   
-    filesContentMap.set(activeFile.path, updatedActiveFile);
-    const dataPayload: IDataPayload = {
-      fileExplorerData,
-      openFiles: files,
-      activeFile: updatedActiveFile,
-    };
-    workspaceApi.saveWorkspace(roomId as string, dataPayload, filesContentMap)
-      .catch(error => console.error('Error saving workspace:', error));
+  const debouncedSaveAndEmit = useDebounceCallback(
+    (content: string, socketRef: any, roomId: string | string[], activeFile: IFile, fileExplorerData: IFileExplorerNode, files: IFile[]) => {
+      const updatedActiveFile = {
+        ...activeFile,
+        content: content,
+      };
+    
+      filesContentMap.set(activeFile.path, updatedActiveFile);
+      const dataPayload: IDataPayload = {
+        fileExplorerData,
+        openFiles: files,
+        activeFile: updatedActiveFile,
+      };
+      
+      // Save workspace
+      workspaceApi.saveWorkspace(roomId as string, dataPayload, filesContentMap)
+        .catch(error => console.error('Error saving workspace:', error));
+    
+      // Emit changes
+      socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
+        roomId,
+        payload: dataPayload,
+      });
   
-    socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
-      roomId,
-      payload: dataPayload,
-    });
-  },
-  1500
-);
+      // Fetch AI suggestions if enabled
+      fetchSuggestions(content, activeFile.language);
+    },
+    1500
+  );
 
 function handleEditorChange(content: string | undefined) {
   if (content === undefined) return;
@@ -450,9 +459,17 @@ function handleEditorChange(content: string | undefined) {
             "&:hover": { color: "#ffe200" },
           }}
         />
-
-        <SettingsIcon
+         <SettingsIcon
           onClick={() => handleTabChange(3)}
+          sx={{
+            cursor: "pointer",
+            fontSize: "2rem",
+            color: activeTab === 3 ? "#ffe200" : "#8c7f91",
+            "&:hover": { color: "#ffe200" },
+          }}
+        />
+        <AutoFixHighIcon
+          onClick={() => handleTabChange(4)}
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
@@ -484,6 +501,13 @@ function handleEditorChange(content: string | undefined) {
         )}
         {activeTab === 3 && (
           <ThemeSwitcher />
+        )}
+        {activeTab === 4 && (
+          <AiSuggestionSidebar
+            isOpen={true}
+            aiResponse={aiResponse}
+            isLoading={aiLoading}
+          />
         )}
       </div>
       <div className="coegle_editor w-full md:w-[70%] h-screen">

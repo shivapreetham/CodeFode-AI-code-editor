@@ -36,8 +36,8 @@ export const workspaceApi = {
         filesContent // Using the array instead of Map
       };
 
-      console.log('Sending workspace save request:', workspaceData);
-
+      // console.log('Sending workspace save request:', workspaceData);
+      // console.log(`${BASE_URL}/api/workspace`)
       const response = await fetch(`${BASE_URL}/api/workspace`, {
         method: 'POST',
         headers: {

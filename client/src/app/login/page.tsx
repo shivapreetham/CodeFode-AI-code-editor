@@ -84,6 +84,15 @@ export default function LoginPage() {
               Register
             </a>
           </div>
+          <div className="text-center text-sm text-white mt-4">
+            Forgot Password?{" "}
+            <a
+              href="/forgot-password"
+              className="text-blue-400 hover:underline"
+            >
+              Reset Password
+            </a>
+          </div>
         </form>
       </div>
     </div>

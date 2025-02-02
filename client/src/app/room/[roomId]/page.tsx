@@ -12,6 +12,8 @@ import SourceIcon from "@mui/icons-material/Source";
 import Peoples from "@/app/components/Peoples";
 import ChatIcon from '@mui/icons-material/Chat';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import FileExplorer from "@/app/components/fileExplorer/FileExplorer";
 import CloseIcon from "@mui/icons-material/Close";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
@@ -80,6 +82,11 @@ const Page = () => {
   const [loading, setLoading] = useState(false);
   const [codeOutput, setCodeOutput] = useState("");
   const [codeStatus, setCodeStatus] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+    const toggleSidebar = () => {
+     setIsCollapsed(!isCollapsed);
+    };
 
   const editorRef = useRef(null);
   const socketRef = useRef<Socket | null>(null);
@@ -535,40 +542,67 @@ function handleEditorChange(content: string | undefined) {
             "&:hover": { color: "#ffe200" },
           }}
         />
+        <button
+        onClick={toggleSidebar}
+        className="text-white text-lg"
+        >
+        {isCollapsed ?
+          <ArrowBackIcon
+          sx={{
+            cursor: "pointer",
+            fontSize: "2rem",
+            color: activeTab === 4 ? "#ffe200" : "#8c7f91",
+            "&:hover": { color: "#ffe200" },
+          }}
+        /> :
+        <ArrowForwardIcon
+          sx={{
+            cursor: "pointer",
+            fontSize: "2rem",
+            color: activeTab === 4 ? "#ffe200" : "#8c7f91",
+            "&:hover": { color: "#ffe200" },
+          }}
+        />
+        }
+        </button>
       </div>
-      <div className="w-full md:w-[30%] lg:w-[30%] md:h-screen bg-[#right] border-r border-r-[#605c5c]">
-      {activeTab === 0 && (
-          <FileExplorer
-            fileExplorerData={fileExplorerData}
-            setFileExplorerData={setFileExplorerData}
-            activeFile={activeFile}
-            setActiveFile={setActiveFile}
-            files={files}
-            setFiles={setFiles}
-            isFileExplorerUpdated={isFileExplorerUpdated}
-            setIsFileExplorerUpdated={setIsFileExplorerUpdated}
-            roomId={roomId as string}
-            filesContentMap={filesContentMap}
-          />
-        )}
-        {activeTab === 1 && (
-          <Peoples clients={clients} roomId={roomId as string} />
-        )}
-        {activeTab === 2 && username && roomId && (
-          <Chat socket={socketRef.current} username={username} roomId={roomId as string} />
-        )}
-        {activeTab === 3 && (
-          <ThemeSwitcher />
-        )}
-        {activeTab === 4 && (
-          <AiSuggestionSidebar
-            isOpen={true}
-            aiResponse={aiResponse}
-            isLoading={aiLoading}
-          />
-        )}
-      </div>
-      <div className="coegle_editor w-full md:w-[70%] h-screen">
+      {
+        !isCollapsed && (
+          <div className="w-full md:w-[30%] lg:w-[30%] md:h-screen bg-[#right] border-r border-r-[#605c5c]">
+          {activeTab === 0 && (
+              <FileExplorer
+                fileExplorerData={fileExplorerData}
+                setFileExplorerData={setFileExplorerData}
+                activeFile={activeFile}
+                setActiveFile={setActiveFile}
+                files={files}
+                setFiles={setFiles}
+                isFileExplorerUpdated={isFileExplorerUpdated}
+                setIsFileExplorerUpdated={setIsFileExplorerUpdated}
+                roomId={roomId as string}
+                filesContentMap={filesContentMap}
+              />
+            )}
+            {activeTab === 1 && (
+              <Peoples clients={clients} roomId={roomId as string} />
+            )}
+            {activeTab === 2 && username && roomId && (
+              <Chat socket={socketRef.current} username={username} roomId={roomId as string} />
+            )}
+            {activeTab === 3 && (
+              <ThemeSwitcher />
+            )}
+            {activeTab === 4 && (
+              <AiSuggestionSidebar
+                isOpen={true}
+                aiResponse={aiResponse}
+                isLoading={aiLoading}
+              />
+            )}
+          </div>
+        )
+      }
+      <div className={`coegle_editor h-screen ${isCollapsed ? "md:w-[99.5%]" : "md:w-[95%]"}`}>
         <div className="h-[5vh] w-full flex overflow-y-auto mb-2">
           {files.map((file, index) => {
             return (
@@ -593,7 +627,9 @@ function handleEditorChange(content: string | undefined) {
           })}
         </div>
         {activeFile.name && files.length > 0 ? (
-          <div className="h-[93vh]">
+          <div className={`w-full h-[93vh] ${
+            isCollapsed ? "md:w-[99.5%]" : "md:w-[97%]"
+          } md:h-screen transition-all duration-300`}>
             <Editor
               height={isOutputExpand ? "60%" : "86%"}
               path={activeFile.name}

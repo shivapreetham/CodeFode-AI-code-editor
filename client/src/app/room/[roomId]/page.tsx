@@ -33,14 +33,28 @@ import { ThemeContext } from "@/context/ThemeContext";
 
 const filesContentMap = new Map<string, IFile>();
 
-const initialActiveFile = {
+const DEFAULT_FILE = {
   name: "index.js",
   language: "javascript",
   content: `console.log(\`You are awesome 🤟\)`,
   path: "/root/index.js",
 };
 
-filesContentMap.set(initialActiveFile.path, initialActiveFile);
+const DEFAULT_EXPLORER = {
+  id: uuid(),
+  name: "root",
+  isFolder: true,
+  path: "/root",
+  nodes: [
+    {
+      id: uuid(),
+      name: "index.js",
+      isFolder: false,
+      nodes: [],
+      path: "/root/index.js",
+    },
+  ],
+};
 
 const Page = () => {
   const params = useParams();
@@ -54,23 +68,10 @@ const Page = () => {
 
   const [clients, setClients] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
-  const [activeFile, setActiveFile] = useState(initialActiveFile);
-  const [files, setFiles] = useState([initialActiveFile]);
-  const [fileExplorerData, setFileExplorerData] = useState<IFileExplorerNode>({
-    id: uuid(),
-    name: "root",
-    isFolder: true,
-    path: "/root",
-    nodes: [
-      {
-        id: uuid(),
-        name: "index.js",
-        isFolder: false,
-        nodes: [],
-        path: "/root/index.js",
-      },
-    ],
-  });
+  const [activeFile, setActiveFile] = useState<IFile>({ name: "", content: "", language: "", path: "" });
+  const [files, setFiles] = useState<IFile[]>([]);
+
+  const [fileExplorerData, setFileExplorerData] = useState<IFileExplorerNode>(DEFAULT_EXPLORER);
   const [isFileExplorerUpdated, setIsFileExplorerUpdated] = useState(false);
   const [isOutputExpand, setIsOutputExpand] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -130,20 +131,31 @@ function handleEditorChange(content: string | undefined) {
       try {
         setLoading(true);
         const workspace = await workspaceApi.getWorkspace(roomId as string);
-        if (workspace) {
+        
+        if (workspace && workspace.filesContentMap) {
           setFileExplorerData(workspace.fileExplorerData);
           setFiles(workspace.openFiles);
           setActiveFile(workspace.activeFile);
           
-          const contentMap = new Map(
-            workspace.filesContent.map((item: { path: string; file: IFile }) => [item.path, item.file])
-          );
-          workspace.filesContent.forEach((item: { path: string; file: IFile }) => {
-            filesContentMap.set(item.path, item.file);
+          // Clear and update filesContentMap
+          filesContentMap.clear();
+          workspace.filesContentMap.forEach((file : IFile, path: string) => {
+            filesContentMap.set(path, file);
           });
+        } else {
+          // Set defaults for new workspace
+          setFileExplorerData(DEFAULT_EXPLORER);
+          setFiles([DEFAULT_FILE]);
+          setActiveFile(DEFAULT_FILE);
+          filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
         }
       } catch (error) {
         console.error('Error loading workspace:', error);
+        // Set defaults on error
+        setFileExplorerData(DEFAULT_EXPLORER);
+        setFiles([DEFAULT_FILE]);
+        setActiveFile(DEFAULT_FILE);
+        filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
       } finally {
         setLoading(false);
       }

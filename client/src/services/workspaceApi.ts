@@ -3,7 +3,6 @@ import { IFile } from '@/interfaces/IFile';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-// New interface for file content items
 interface FileContentItem {
   path: string;
   file: IFile;
@@ -14,7 +13,7 @@ interface WorkspacePayload {
   fileExplorerData: IDataPayload['fileExplorerData'];
   openFiles: IFile[];
   activeFile: IFile;
-  filesContent: FileContentItem[]; // Changed from filesContentMap
+  filesContent: FileContentItem[]; 
 }
 
 export const workspaceApi = {
@@ -36,7 +35,7 @@ export const workspaceApi = {
         filesContent // Using the array instead of Map
       };
 
-      console.log('Sending workspace save request:', workspaceData);
+      // console.log('Sending workspace save request:', workspaceData);
       // console.log(`${BASE_URL}/api/workspace`)
       const response = await fetch(`${BASE_URL}/api/workspace`, {
         method: 'POST',
@@ -82,7 +81,7 @@ export const workspaceApi = {
         );
         return {
           ...responseData,
-          filesContentMap // Replace filesContent array with Map for frontend
+          filesContentMap 
         };
       }
 

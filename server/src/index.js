@@ -13,7 +13,7 @@ app.use(cors({
 }))
 
 const PORT =process.env.PORT  || 8000 ;
-// console.log(process.env.MONGODB_URL)
+// console.log(process.env.MONGODB_URI)
 app.use('/api/user',userRoutes);
 app.use('/api/workspace',workspaceRouters)
 app.use('/api/ai',aiRoutes)

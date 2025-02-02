@@ -8,11 +8,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const[loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     const res = await signIn("credentials", {
       email,
@@ -22,9 +24,11 @@ export default function LoginPage() {
 
     if (res?.error) {
       setError("Invalid credentials");
+      setLoading(false);
     } else {
       router.push("/");
-    }
+      setLoading(false);
+    }    
   };
 
   return (
@@ -64,8 +68,9 @@ export default function LoginPage() {
           <button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
+            disabled={loading}
           >
-            Login
+            {loading ? "Loading..." : "Login"}
           </button>
 
           <div className="text-center text-sm font-medium text-gray-500 dark:text-gray-300">
@@ -82,6 +87,15 @@ export default function LoginPage() {
             Don&apos;t have an account?{" "}
             <a href="/register" className="text-blue-400 hover:underline">
               Register
+            </a>
+          </div>
+          <div className="text-center text-sm text-white mt-4">
+            Forgot Password?{" "}
+            <a
+              href="/forgot-password"
+              className="text-blue-400 hover:underline"
+            >
+              Reset Password
             </a>
           </div>
         </form>

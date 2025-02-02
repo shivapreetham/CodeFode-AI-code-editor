@@ -4,7 +4,6 @@ import { createOrUpdateWorkspace, getWorkspace } from "../controllers/workspaceC
 
 const router = express.Router();
 
-// Routes
 router.post('/', createOrUpdateWorkspace);
 router.get('/:roomId', getWorkspace);
 

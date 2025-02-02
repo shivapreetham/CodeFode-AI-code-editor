@@ -26,7 +26,8 @@ export default function Home() {
 
   useEffect(() => {
     if (status === "authenticated") setUsername(session?.user?.email as string);
-    else setUsername("");
+    else if(status=='loading')setUsername("Please Wait..")
+    else setUsername("You Need to login");
   }, [status]);
   const notify = () => {
     toast.success("New room Id created successfully.");

@@ -529,6 +529,8 @@ function handleEditorChange(content: string | undefined) {
                 cursorStyle: "line",
                 lineNumbersMinChars: 4,
                 quickSuggestions: true,
+                wordWrap: "on", // Enables line wrapping
+                wrappingStrategy: "advanced",
               }}
               loading={<Loading status="Initializing..." color="#f29221" />}
             />

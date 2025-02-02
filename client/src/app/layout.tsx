@@ -29,6 +29,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ChatProvider } from "@/context/ChatContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { FontSizeProvider } from "@/context/FontSizeContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,9 +38,11 @@ export default function RootLayout({ children }: { children: any }) {
     <html lang="en">
       <SessionProvider>
         <ThemeProvider>
-        <ChatProvider>
+          <FontSizeProvider>
+          <ChatProvider>
           <body className={inter.className}>{children}</body>
-        </ChatProvider>
+        `  </ChatProvider>
+          </FontSizeProvider>
         </ThemeProvider>
       </SessionProvider>
     </html>

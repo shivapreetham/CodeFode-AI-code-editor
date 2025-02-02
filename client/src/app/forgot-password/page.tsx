@@ -104,121 +104,79 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Forgot Password
-          </h2>
-        </div>
+    <div className="bg-gradient-to-tl from-black to-gray-700 flex min-h-screen flex-col items-center justify-center py-16 px-8 sm:px-24">
+      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-lg border border-gray-200 rounded-lg shadow-xl">
+        <h2 className="text-3xl font-semibold text-white text-center mb-6">
+          Forgot Password
+        </h2>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            {error}
-          </div>
-        )}
+        {error && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
 
         {step === "email" && (
-          <form className="mt-8 space-y-6" onSubmit={handleSendOTP}>
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                {loading ? "Sending..." : "Send OTP"}
-              </button>
-            </div>
+          <form onSubmit={handleSendOTP} className="space-y-6">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
+              required
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
+            >
+              {loading ? "Sending..." : "Send OTP"}
+            </button>
           </form>
         )}
 
         {step === "otp" && (
-          <form className="mt-8 space-y-6" onSubmit={handleVerifyOTP}>
-            <div>
-              <label htmlFor="otp" className="sr-only">
-                OTP
-              </label>
-              <input
-                id="otp"
-                name="otp"
-                type="text"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-              />
-            </div>
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                {loading ? "Verifying..." : "Verify OTP"}
-              </button>
-            </div>
+          <form onSubmit={handleVerifyOTP} className="space-y-6">
+            <input
+              type="text"
+              placeholder="Enter OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
+              required
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
+            >
+              {loading ? "Verifying..." : "Verify OTP"}
+            </button>
           </form>
         )}
 
         {step === "password" && (
-          <form className="mt-8 space-y-6" onSubmit={handleResetPassword}>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="new-password" className="sr-only">
-                  New Password
-                </label>
-                <input
-                  id="new-password"
-                  name="new-password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="New Password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="confirm-password" className="sr-only">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirm-password"
-                  name="confirm-password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
-            </div>
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                {loading ? "Resetting..." : "Reset Password"}
-              </button>
-            </div>
+          <form onSubmit={handleResetPassword} className="space-y-6">
+            <input
+              type="password"
+              placeholder="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
+              required
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
+            >
+              {loading ? "Resetting..." : "Reset Password"}
+            </button>
           </form>
         )}
       </div>

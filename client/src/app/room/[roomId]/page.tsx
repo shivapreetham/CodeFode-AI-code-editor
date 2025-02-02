@@ -88,6 +88,42 @@ const Page = () => {
     enabled: activeTab === 4
   });
   
+
+  const handleKeyboardShortcuts = (e: KeyboardEvent) => {
+    if (e.ctrlKey) {
+      switch (e.key.toLowerCase()) {
+        case 'i':
+          e.preventDefault(); 
+          setActiveTab(4); // AI tab
+          break;
+        case 'c':
+          e.preventDefault();
+          setActiveTab(2); // Chat tab
+          break;
+        case 'n':
+          e.preventDefault();
+          setActiveTab(0); // Directory tab
+          break;
+        case 's':
+          e.preventDefault();
+          setActiveTab(3); // Settings tab
+          break;
+        case 'u':
+          e.preventDefault();
+          setActiveTab(1); // Users tab
+          break;
+      }
+    }
+  };
+
+  useEffect(() => {
+    //keyboard shortcuts
+    window.addEventListener('keydown', handleKeyboardShortcuts);
+    return () => {
+      window.removeEventListener('keydown', handleKeyboardShortcuts);
+    };
+  }, []);
+
   const {data:session, status} = useSession();
 
   useEffect(()=>{

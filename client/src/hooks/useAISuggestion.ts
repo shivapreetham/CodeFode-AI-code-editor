@@ -75,7 +75,6 @@ export const useAISuggestions = ({ enabled }: UseAISuggestionsProps) => {
       setIsLoading(false);
     }
   };
-  console.log(aiResponse)
   return {
     isLoading,
     aiResponse,

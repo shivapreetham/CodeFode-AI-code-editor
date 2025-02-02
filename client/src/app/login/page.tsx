@@ -28,9 +28,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black">
-      <div className="bg-white/10 backdrop-blur-lg p-8 rounded-xl shadow-lg w-96">
-        <h2 className="text-2xl font-bold text-white text-center mb-4">
+    <div className="bg-gradient-to-tl from-black to-gray-700 flex min-h-screen flex-col items-center justify-center py-16 px-8 sm:px-24">
+      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-lg border border-gray-200 rounded-lg shadow-xl">
+        <h2 className="text-3xl font-semibold text-white text-center mb-6">
           Login
         </h2>
 
@@ -38,49 +38,53 @@ export default function LoginPage() {
           <p className="text-red-500 text-sm text-center mb-3">{error}</p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 bg-transparent border-b border-gray-400 text-white outline-none focus:border-white"
-            required
-          />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
+              required
+            />
+          </div>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 bg-transparent border-b border-gray-400 text-white outline-none focus:border-white"
-            required
-          />
+          <div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
+              required
+            />
+          </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
           >
             Login
           </button>
+
+          <div className="text-center text-sm font-medium text-gray-500 dark:text-gray-300">
+            or{" "}
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/" })}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg mt-2 transition"
+            >
+              Continue with Google
+            </button>
+          </div>
+
+          <div className="text-center text-sm text-white mt-4">
+            Don&apos;t have an account?{" "}
+            <a href="/register" className="text-blue-400 hover:underline">
+              Register
+            </a>
+          </div>
         </form>
-
-        <div className="text-center text-white mt-4">
-          <p className="text-sm">or</p>
-          <button
-            onClick={() => signIn("google", { callbackUrl: "/" })}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg mt-2 transition"
-          >
-            Continue with Google
-          </button>
-        </div>
-
-        <p className="text-sm text-white text-center mt-4">
-          Don&apos;t have an account?{" "}
-          <a href="/register" className="text-blue-400 hover:underline">
-            Register
-          </a>
-        </p>
       </div>
     </div>
   );

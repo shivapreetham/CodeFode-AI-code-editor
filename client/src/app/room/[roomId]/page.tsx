@@ -81,7 +81,7 @@ const Page = () => {
   const socketRef = useRef<Socket | null>(null);
 
   const { isLoading: aiLoading, aiResponse, fetchSuggestions } = useAISuggestions({
-    enabled: activeTab === 3 // Only enabled when AI tab is active
+    enabled: activeTab === 4
   });
   
   const debouncedSaveAndEmit = useDebounceCallback(

@@ -117,7 +117,7 @@ export default function RegisterPage() {
           // OTP Verification Form
           <form onSubmit={handleOtpSubmit} className="space-y-6">
             <p className="text-center text-sm text-white">
-              We've sent an OTP to your email. Enter it below.
+              We&apos;ve sent an OTP to your email. Enter it below.
             </p>
             <input
               type="text"

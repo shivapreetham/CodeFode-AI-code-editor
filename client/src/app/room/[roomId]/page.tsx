@@ -29,6 +29,7 @@ import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ThemeSwitcher from "@/app/components/theme/ThemeComp";
 import { ThemeContext } from "@/context/ThemeContext";
+import { useSession } from "next-auth/react";
 
 
 const filesContentMap = new Map<string, IFile>();
@@ -85,6 +86,13 @@ const Page = () => {
     enabled: activeTab === 4
   });
   
+  const {data:session, status} = useSession();
+
+  useEffect(()=>{
+    if(status==='unauthenticated')
+      router.push('/login')
+  },[status])
+
   const debouncedSaveAndEmit = useDebounceCallback(
     (content: string, socketRef: any, roomId: string | string[], activeFile: IFile, fileExplorerData: IFileExplorerNode, files: IFile[]) => {
       const updatedActiveFile = {

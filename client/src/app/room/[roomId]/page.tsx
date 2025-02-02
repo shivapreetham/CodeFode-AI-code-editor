@@ -11,6 +11,7 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import SourceIcon from "@mui/icons-material/Source";
 import Peoples from "@/app/components/Peoples";
 import ChatIcon from '@mui/icons-material/Chat';
+import SettingsIcon from '@mui/icons-material/Settings';
 import FileExplorer from "@/app/components/fileExplorer/FileExplorer";
 import CloseIcon from "@mui/icons-material/Close";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
@@ -23,6 +24,8 @@ import Chat, { Message } from "@/app/components/chat/Chat";
 import { ChatContext } from "@/context/ChatContext";
 import { useDebounceCallback } from 'usehooks-ts';
 import { workspaceApi } from "@/services/workspaceApi";
+import ThemeSwitcher from "@/app/components/theme/ThemeComp";
+import { ThemeContext } from "@/context/ThemeContext";
 
 
 const filesContentMap = new Map<string, IFile>();
@@ -42,6 +45,7 @@ const Page = () => {
   const username= query.get("username");
   const router = useRouter();
   const { messages, setMessages } = useContext(ChatContext);
+  const {theme, setTheme} = useContext(ThemeContext);
 
   const { roomId } = params;
 
@@ -446,6 +450,16 @@ function handleEditorChange(content: string | undefined) {
             "&:hover": { color: "#ffe200" },
           }}
         />
+
+        <SettingsIcon
+          onClick={() => handleTabChange(3)}
+          sx={{
+            cursor: "pointer",
+            fontSize: "2rem",
+            color: activeTab === 3 ? "#ffe200" : "#8c7f91",
+            "&:hover": { color: "#ffe200" },
+          }}
+        />
       </div>
       <div className="w-full md:w-[30%] lg:w-[30%] md:h-screen bg-[#right] border-r border-r-[#605c5c]">
       {activeTab === 0 && (
@@ -467,6 +481,9 @@ function handleEditorChange(content: string | undefined) {
         )}
         {activeTab === 2 && username && roomId && (
           <Chat socket={socketRef.current} username={username} roomId={roomId as string} />
+        )}
+        {activeTab === 3 && (
+          <ThemeSwitcher />
         )}
       </div>
       <div className="coegle_editor w-full md:w-[70%] h-screen">
@@ -503,7 +520,7 @@ function handleEditorChange(content: string | undefined) {
               onChange={(value) => handleEditorChange(value)}
               onMount={handleEditorDidMount}
               value={filesContentMap.get(activeFile.path)?.content}
-              theme={"vs-dark"}
+              theme={theme}
               options={{
                 minimap: {
                   enabled: false,
@@ -512,6 +529,8 @@ function handleEditorChange(content: string | undefined) {
                 cursorStyle: "line",
                 lineNumbersMinChars: 4,
                 quickSuggestions: true,
+                wordWrap: "on", // Enables line wrapping
+                wrappingStrategy: "advanced",
               }}
               loading={<Loading status="Initializing..." color="#f29221" />}
             />

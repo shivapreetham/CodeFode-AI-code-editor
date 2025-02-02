@@ -28,6 +28,7 @@ import { SessionProvider } from "next-auth/react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ChatProvider } from "@/context/ChatContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,9 +36,11 @@ export default function RootLayout({ children }: { children: any }) {
   return (
     <html lang="en">
       <SessionProvider>
+        <ThemeProvider>
         <ChatProvider>
           <body className={inter.className}>{children}</body>
         </ChatProvider>
+        </ThemeProvider>
       </SessionProvider>
     </html>
   );

@@ -11,6 +11,7 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import SourceIcon from "@mui/icons-material/Source";
 import Peoples from "@/app/components/Peoples";
 import ChatIcon from '@mui/icons-material/Chat';
+import SettingsIcon from '@mui/icons-material/Settings';
 import FileExplorer from "@/app/components/fileExplorer/FileExplorer";
 import CloseIcon from "@mui/icons-material/Close";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
@@ -26,6 +27,9 @@ import { workspaceApi } from "@/services/workspaceApi";
 import { useAISuggestions } from "@/hooks/useAISuggestion";
 import AiSuggestionSidebar from "@/app/components/AiSidebar";
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ThemeSwitcher from "@/app/components/theme/ThemeComp";
+import { ThemeContext } from "@/context/ThemeContext";
+
 
 const filesContentMap = new Map<string, IFile>();
 
@@ -44,6 +48,7 @@ const Page = () => {
   const username= query.get("username");
   const router = useRouter();
   const { messages, setMessages } = useContext(ChatContext);
+  const {theme, setTheme} = useContext(ThemeContext);
 
   const { roomId } = params;
 
@@ -487,6 +492,9 @@ function handleEditorChange(content: string | undefined) {
           <Chat socket={socketRef.current} username={username} roomId={roomId as string} />
         )}
         {activeTab === 3 && (
+          <ThemeSwitcher />
+        )}
+        {activeTab === 3 && (
           <AiSuggestionSidebar
             isOpen={true}
             aiResponse={aiResponse}
@@ -528,7 +536,7 @@ function handleEditorChange(content: string | undefined) {
               onChange={(value) => handleEditorChange(value)}
               onMount={handleEditorDidMount}
               value={filesContentMap.get(activeFile.path)?.content}
-              theme={"vs-dark"}
+              theme={theme}
               options={{
                 minimap: {
                   enabled: false,
@@ -537,6 +545,8 @@ function handleEditorChange(content: string | undefined) {
                 cursorStyle: "line",
                 lineNumbersMinChars: 4,
                 quickSuggestions: true,
+                wordWrap: "on", // Enables line wrapping
+                wrappingStrategy: "advanced",
               }}
               loading={<Loading status="Initializing..." color="#f29221" />}
             />

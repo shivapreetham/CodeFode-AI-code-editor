@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import axios, { AxiosError } from 'axios';
 
-interface Suggestion {
+export interface Suggestion {
   title: string;
   code: string;
   explanation: string;
 }
 
-interface Error {
+export interface Error {
   title: string;
   description: string;
   suggestion: string;
 }
 
-interface AIResponse {
+export interface AIResponse {
   analysis: {
     suggestions: Suggestion[];
     errors: Error[];
@@ -32,25 +32,43 @@ interface UseAISuggestionsProps {
 
 export const useAISuggestions = ({ enabled }: UseAISuggestionsProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [aiResponse, setAIResponse] = useState<AIResponse | undefined>(undefined);  // Changed from null to undefined
-  const [error, setError] = useState<AxiosError | null>(null);
+  const [aiResponse, setAIResponse] = useState<AIResponse | undefined>();
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSuggestions = async (code: string, language: string) => {
-    if (!enabled) return;
+    if (!enabled || !code.trim()) return;
     
     try {
       setIsLoading(true);
       setError(null);
-      // console.log("sending the api request");
-      const response = await axios.post<AIResponse>(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ai/code`, { code, language });
+
+      const response = await axios.post<AIResponse>(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ai/code`, 
+        { code, language },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000 // 30 second timeout
+        }
+      );
+
       setAIResponse(response.data);
-      console.log("got response from AI:", response.data);
+
     } catch (err) {
+      let errorMessage = 'Failed to analyze code';
+      
       if (err instanceof AxiosError) {
-        setError(err);
-        console.error('Error fetching AI suggestions:', err);
+        if (err.response?.status === 429) {
+          errorMessage = 'Rate limit exceeded. Please try again later.';
+        } else if (err.code === 'ECONNABORTED') {
+          errorMessage = 'Request timed out. Please try again.';
+        } else if (err.response?.data?.error) {
+          errorMessage = err.response.data.error;
+        }
       }
+      
+      setError(errorMessage);
       setAIResponse(undefined);
+      
     } finally {
       setIsLoading(false);
     }

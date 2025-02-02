@@ -459,9 +459,17 @@ function handleEditorChange(content: string | undefined) {
             "&:hover": { color: "#ffe200" },
           }}
         />
-
-        <AutoFixHighIcon
+         <SettingsIcon
           onClick={() => handleTabChange(3)}
+          sx={{
+            cursor: "pointer",
+            fontSize: "2rem",
+            color: activeTab === 3 ? "#ffe200" : "#8c7f91",
+            "&:hover": { color: "#ffe200" },
+          }}
+        />
+        <AutoFixHighIcon
+          onClick={() => handleTabChange(4)}
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
@@ -494,7 +502,7 @@ function handleEditorChange(content: string | undefined) {
         {activeTab === 3 && (
           <ThemeSwitcher />
         )}
-        {activeTab === 3 && (
+        {activeTab === 4 && (
           <AiSuggestionSidebar
             isOpen={true}
             aiResponse={aiResponse}

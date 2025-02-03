@@ -1,5 +1,5 @@
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
-import React, { Dispatch, SetStateAction, useState } from "react";
+import React, { Dispatch, SetStateAction, useContext, useState } from "react";
 import FileIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import ArrowIcon from "@mui/icons-material/ArrowForwardIosOutlined";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
@@ -8,13 +8,14 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import EditIcon from "@mui/icons-material/EditOutlined";
 import { IFile } from "@/interfaces/IFile";
 import { getLanguageByFileExtension } from "@/utils/getLanguageByExt";
+import { ActiveFileContext } from "@/context/ActiveFileContext";
 
 interface FileExplorereNodeProps {
   fileExplorerNode: IFileExplorerNode;
   handleInsertNode: (id: string, name: string, isFolder: boolean) => void;
-  handleDeleteNode: (nodeId: string, nodePath: string) => void;
-  handleRename: (nodeId: string, newName: string) => void;
-  handleMove: (sourceId: string, targetId: string) => void;
+  handleDeleteNode: (nodeId: string, nodePath: string,isFolder: boolean) => void;
+  handleRename: (nodeId: string, newName: string,isFolder: boolean) => void;
+  handleMove: (sourceId: string, targetId: string,isFolder: boolean) => void;
   activeFile: IFile;
   setActiveFile: Dispatch<SetStateAction<IFile>>;
   files: IFile[];
@@ -44,6 +45,7 @@ const FileExplorerNode = ({
   const [expand, setExpand] = useState(true);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(fileExplorerNode.name);
+  const { activeFileGlobal, setActiveFileGlobal } = useContext(ActiveFileContext);
 
   const handleOpenFile = () => {
     const file = {
@@ -53,6 +55,9 @@ const FileExplorerNode = ({
       path: fileExplorerNode.path,
     };
     setActiveFile(file);
+    console.log("file", file.path);
+    setActiveFileGlobal(file);
+    
     const existingFile = files.filter(
       (file) => file.path === fileExplorerNode.path
     );
@@ -75,7 +80,7 @@ const FileExplorerNode = ({
 
   const onDeleteNode = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
     e.stopPropagation();
-    handleDeleteNode(fileExplorerNode.id, fileExplorerNode.path);
+    handleDeleteNode(fileExplorerNode.id, fileExplorerNode.path, fileExplorerNode.isFolder);
   };
 
   const startRename = (e: React.MouseEvent) => {
@@ -86,7 +91,7 @@ const FileExplorerNode = ({
 
   const submitRename = () => {
     if (newName && newName !== fileExplorerNode.name) {
-      handleRename(fileExplorerNode.id, newName);
+      handleRename(fileExplorerNode.id, newName, fileExplorerNode.isFolder);
       setIsFileExplorerUpdated(true);
     }
     setIsRenaming(false);
@@ -118,7 +123,7 @@ const FileExplorerNode = ({
     if (fileExplorerNode.isFolder) {
       const sourceId = e.dataTransfer.getData("nodeId");
       if (sourceId !== fileExplorerNode.id) {
-        handleMove(sourceId, fileExplorerNode.id);
+        handleMove(sourceId, fileExplorerNode.id, fileExplorerNode.isFolder);
         setIsFileExplorerUpdated(true);
       }
     }

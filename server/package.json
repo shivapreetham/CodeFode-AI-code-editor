@@ -1,5 +1,5 @@
 {
-  "name": "codesocket",
+  "name": "code-fode",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.js",
@@ -9,10 +9,11 @@
     "dev": "nodemon src/index.js"
   },
   "keywords": [],
-  "author": "abhishekmaran",
+  "author": "SAPHIRE",
   "license": "ISC",
   "dependencies": {
     "@ai-sdk/cohere": "^1.1.6",
+    "@google/generative-ai": "^0.21.0",
     "ai": "^4.1.16",
     "bull": "^4.16.1",
     "cors": "^2.8.5",

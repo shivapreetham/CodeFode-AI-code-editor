@@ -87,7 +87,7 @@ const Chat: React.FC<ChatProps> = ({ socket, username, roomId }) => {
         />
         <button
           onClick={sendMessage}
-          className="h-8 md:h-10 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          className="h-8 md:h-10 px-4 text-sm font-medium text-white bg-green-800 rounded-lg hover:bg-green-600"
         >
           Send
         </button>

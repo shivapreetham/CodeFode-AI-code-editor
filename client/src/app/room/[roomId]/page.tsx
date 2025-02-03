@@ -1,7 +1,8 @@
 "use client";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import React, { useContext, useEffect, useRef, useState } from "react";
-import Editor from "@monaco-editor/react";
+import Editor, { Monaco } from "@monaco-editor/react";
+import * as monaco from "monaco-editor";
 import "./page.css";
 import { initSocket } from "@/socket";
 import { ACTIONS } from "@/app/helpers/Actions";
@@ -10,30 +11,35 @@ import { Socket } from "socket.io-client";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import SourceIcon from "@mui/icons-material/Source";
 import Peoples from "@/app/components/Peoples";
-import ChatIcon from '@mui/icons-material/Chat';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ChatIcon from "@mui/icons-material/Chat";
+import SettingsIcon from "@mui/icons-material/Settings";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import FileExplorer from "@/app/components/fileExplorer/FileExplorer";
 import CloseIcon from "@mui/icons-material/Close";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
 import { IFile } from "@/interfaces/IFile";
 import { IDataPayload } from "@/interfaces/IDataPayload";
+import { Notification, NotificationType } from "@/interfaces/Notifications";
 import { v4 as uuid } from "uuid";
 import axios, { AxiosError } from "axios";
 import Loading from "@/app/components/loading/Loading";
 import Chat, { Message } from "@/app/components/chat/Chat";
 import { ChatContext } from "@/context/ChatContext";
-import { useDebounceCallback } from 'usehooks-ts';
+import { useDebounceCallback } from "usehooks-ts";
 import { workspaceApi } from "@/services/workspaceApi";
 import { useAISuggestions } from "@/hooks/useAISuggestion";
 import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ActivityLog from "@/app/components/activityLog/activityLog";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import ThemeSwitcher from "@/app/components/theme/ThemeComp";
 import { ThemeContext } from "@/context/ThemeContext";
 import { FontSizeContext } from "@/context/FontSizeContext";
 import { useSession } from "next-auth/react";
-
+import { ActiveFileContext } from "@/context/ActiveFileContext";
+import { getNotifications, addNotification, createNotificationMessage } from '@/services/notificationApi';
+import { getFileLanguage } from "@/app/helpers/getFileLanguage";
 
 const filesContentMap = new Map<string, IFile>();
 
@@ -63,61 +69,119 @@ const DEFAULT_EXPLORER = {
 const Page = () => {
   const params = useParams();
   const query = useSearchParams();
-  const username= query.get("username");
+  const username = query.get("username");
   const router = useRouter();
   const { messages, setMessages } = useContext(ChatContext);
-  const {theme, setTheme} = useContext(ThemeContext);
-  const {fontSize, setFontSize} = useContext(FontSizeContext);
+  const { theme, setTheme } = useContext(ThemeContext);
+  const { fontSize, setFontSize } = useContext(FontSizeContext);
+  const { activeFileGlobal, setActiveFileGlobal } = useContext(ActiveFileContext);
 
   const { roomId } = params;
 
   const [clients, setClients] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
-  const [activeFile, setActiveFile] = useState<IFile>({ name: "", content: "", language: "", path: "" });
+  const [activeFile, setActiveFile] = useState<IFile>({
+    name: "",
+    content: "",
+    language: "",
+    path: "",
+  });
   const [files, setFiles] = useState<IFile[]>([]);
 
-  const [fileExplorerData, setFileExplorerData] = useState<IFileExplorerNode>(DEFAULT_EXPLORER);
+  const [fileExplorerData, setFileExplorerData] =
+    useState<IFileExplorerNode>(DEFAULT_EXPLORER);
   const [isFileExplorerUpdated, setIsFileExplorerUpdated] = useState(false);
   const [isOutputExpand, setIsOutputExpand] = useState(false);
   const [loading, setLoading] = useState(false);
   const [codeOutput, setCodeOutput] = useState("");
   const [codeStatus, setCodeStatus] = useState("");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [userId, setUserId] = useState<string>("");
 
-    const toggleSidebar = () => {
-     setIsCollapsed(!isCollapsed);
-    };
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   const editorRef = useRef(null);
+  const monacoRef = useRef<Monaco | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const remoteCursorDecorations = useRef<{ [key: string]: string[] }>({});
 
-  const { isLoading: aiLoading, aiResponse, fetchSuggestions } = useAISuggestions({
-    enabled: activeTab === 4
+  const {
+    isLoading: aiLoading,
+    aiResponse,
+    fetchSuggestions,
+  } = useAISuggestions({
+    enabled: activeTab === 4,
   });
   
+
+  const handleAddNotification = async (
+    type: NotificationType,
+    details: { username: string; fileName?: string; folderName?: string; path?: string }
+  ) => {
+    try {
+      // console.log("adding notification")
+      const message = createNotificationMessage(type, details);
+      const metadata = {
+        path: details.path,
+        language: details.fileName ? getFileLanguage(details.fileName) : undefined,
+      };
+
+      const newNotification = await addNotification(roomId as string, {
+        type,
+        message,
+        username: details.username,
+        metadata
+      });
+
+      const typedNotification: Notification = {
+        type: newNotification.type as NotificationType,
+        message: newNotification.message,
+        username: newNotification.username,
+        timestamp: new Date(newNotification.timestamp),
+        metadata: newNotification.metadata
+      };
+
+      setNotifications(prev => [typedNotification, ...prev]);
+      
+      socketRef.current?.emit(ACTIONS.NOTIFICATION_ADDED, {
+        roomId,
+        notification: typedNotification
+      });
+    } catch (error) {
+      console.error('Error adding notification:', error);
+    }
+  };
 
   const handleKeyboardShortcuts = (e: KeyboardEvent) => {
     if (e.ctrlKey) {
       switch (e.key.toLowerCase()) {
-        case 'i':
-          e.preventDefault(); 
+        case "i":
+          e.preventDefault();
           setActiveTab(4); // AI tab
           break;
-        case 'c':
+        case "c":
           e.preventDefault();
           setActiveTab(2); // Chat tab
           break;
-        case 'n':
+        case "n":
           e.preventDefault();
           setActiveTab(0); // Directory tab
           break;
-        case 's':
+        case "s":
           e.preventDefault();
           setActiveTab(3); // Settings tab
           break;
-        case 'u':
+        case "u":
           e.preventDefault();
           setActiveTab(1); // Users tab
+          break;
+        case 'l':
+          e.preventDefault();
+          setActiveTab(5); // Notifications tab
           break;
       }
     }
@@ -125,74 +189,82 @@ const Page = () => {
 
   useEffect(() => {
     //keyboard shortcuts
-    window.addEventListener('keydown', handleKeyboardShortcuts);
+    window.addEventListener("keydown", handleKeyboardShortcuts);
     return () => {
-      window.removeEventListener('keydown', handleKeyboardShortcuts);
+      window.removeEventListener("keydown", handleKeyboardShortcuts);
     };
   }, []);
 
-  const {data:session, status} = useSession();
+  const { data: session, status } = useSession();
 
-  useEffect(()=>{
-    if(status==='unauthenticated')
-      router.push('/login')
-  },[status])
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/login");
+  }, [status]);
 
   const debouncedSaveAndEmit = useDebounceCallback(
-    (content: string, socketRef: any, roomId: string | string[], activeFile: IFile, fileExplorerData: IFileExplorerNode, files: IFile[]) => {
+    (
+      content: string,
+      socketRef: any,
+      roomId: string | string[],
+      activeFile: IFile,
+      fileExplorerData: IFileExplorerNode,
+      files: IFile[]
+    ) => {
       const updatedActiveFile = {
         ...activeFile,
         content: content,
       };
-    
+
       filesContentMap.set(activeFile.path, updatedActiveFile);
       const dataPayload: IDataPayload = {
         fileExplorerData,
         openFiles: files,
         activeFile: updatedActiveFile,
       };
-      
-      // Save workspace
-      workspaceApi.saveWorkspace(roomId as string, dataPayload, filesContentMap)
-        .catch(error => console.error('Error saving workspace:', error));
-    
+
       // Emit changes
       socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
         roomId,
         payload: dataPayload,
       });
-  
+
+      // Save workspace
+      workspaceApi
+        .saveWorkspace(roomId as string, dataPayload, filesContentMap)
+        .catch((error) => console.error("Error saving workspace:", error));
+
       // Fetch AI suggestions if enabled
       fetchSuggestions(content, activeFile.language);
     },
     1500
   );
 
-function handleEditorChange(content: string | undefined) {
-  if (content === undefined) return;
-  debouncedSaveAndEmit(
-    content,
-    socketRef,
-    roomId,
-    activeFile,
-    fileExplorerData,
-    files
-  );
-}
+  function handleEditorChange(content: string | undefined) {
+    if (content === undefined) return;
+    debouncedSaveAndEmit(
+      content,
+      socketRef,
+      roomId,
+      activeFile,
+      fileExplorerData,
+      files
+    );
+  }
   useEffect(() => {
     const loadWorkspace = async () => {
       try {
         setLoading(true);
         const workspace = await workspaceApi.getWorkspace(roomId as string);
-        
+
         if (workspace && workspace.filesContentMap) {
           setFileExplorerData(workspace.fileExplorerData);
           setFiles(workspace.openFiles);
           setActiveFile(workspace.activeFile);
-          
+          setActiveFileGlobal(workspace.activeFile);
+
           // Clear and update filesContentMap
           filesContentMap.clear();
-          workspace.filesContentMap.forEach((file : IFile, path: string) => {
+          workspace.filesContentMap.forEach((file: IFile, path: string) => {
             filesContentMap.set(path, file);
           });
         } else {
@@ -200,14 +272,16 @@ function handleEditorChange(content: string | undefined) {
           setFileExplorerData(DEFAULT_EXPLORER);
           setFiles([DEFAULT_FILE]);
           setActiveFile(DEFAULT_FILE);
+          setActiveFileGlobal(DEFAULT_FILE);
           filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
         }
       } catch (error) {
-        console.error('Error loading workspace:', error);
+        console.error("Error loading workspace:", error);
         // Set defaults on error
         setFileExplorerData(DEFAULT_EXPLORER);
         setFiles([DEFAULT_FILE]);
         setActiveFile(DEFAULT_FILE);
+        setActiveFileGlobal(DEFAULT_FILE);
         filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
       } finally {
         setLoading(false);
@@ -226,25 +300,25 @@ function handleEditorChange(content: string | undefined) {
         openFiles: files,
         activeFile,
       };
-      
+
       // Save to backend
-      workspaceApi.saveWorkspace(roomId as string, dataPayload, filesContentMap)
-        .catch(error => console.error('Error saving workspace:', error));
+      workspaceApi
+        .saveWorkspace(roomId as string, dataPayload, filesContentMap)
+        .catch((error) => console.error("Error saving workspace:", error));
 
       // Emit to other clients
       socketRef.current.emit(ACTIONS.CODE_CHANGE, {
         roomId,
         payload: dataPayload,
       });
-      
+
       setIsFileExplorerUpdated(false);
     }
-  }, [isFileExplorerUpdated, fileExplorerData, files, activeFile, roomId]);
+  }, [isFileExplorerUpdated, fileExplorerData, files, activeFile,activeFileGlobal, roomId]);
 
-
-  function handleEditorDidMount(editor: any, monaco: any) {
-    editorRef.current = editor;
-  }
+  // function handleEditorDidMount(editor: any, monaco: any) {
+  //   editorRef.current = editor;
+  // }
 
   const handleSocketErrors = (err: any) => {
     console.log("Socket error: ", err);
@@ -273,7 +347,13 @@ function handleEditorChange(content: string | undefined) {
             path: "",
           };
     setActiveFile(updatedActiveFile);
+    setActiveFileGlobal(updatedActiveFile);
     setFiles(updatedOpenFiles);
+    handleAddNotification('FILE_UPDATE', {
+      username: username || 'anonymous',
+      fileName: activeFile.name,
+      path: activeFile.path
+    });
     const dataPayload: IDataPayload = {
       fileExplorerData,
       openFiles: updatedOpenFiles,
@@ -287,6 +367,7 @@ function handleEditorChange(content: string | undefined) {
 
   const handleChangeActiveFile = (file: IFile) => {
     setActiveFile(file);
+    setActiveFileGlobal(file);
   };
 
   const handleToggleOutputVisibility = () => {
@@ -321,11 +402,11 @@ function handleEditorChange(content: string | undefined) {
     intervalId: NodeJS.Timeout
   ) => {
     try {
-      console.log("calling for status")
+      console.log("calling for status");
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/code/status/${jobId}`
       );
-      console.log("called for status")
+      console.log("called for status");
       if (response.status === 200) {
         const status = response.data.job.status;
         setCodeStatus(response.data.job.status);
@@ -361,7 +442,11 @@ function handleEditorChange(content: string | undefined) {
       language: activeFile.language,
       extension: activeFile.name.split(".")[1],
     };
-
+    handleAddNotification('CODE_EXECUTE', {
+      username: username || 'anonymous',
+      fileName: activeFile.name,
+      path: activeFile.path
+    })
     if (!["cpp", "py", "js"].includes(data.extension)) {
       toast.error(
         `Unsupported programming language (${data.language}). Supported languages are C++, Python, and JavaScript.`
@@ -409,7 +494,7 @@ function handleEditorChange(content: string | undefined) {
   };
 
   useEffect(() => {
-    const usernameFromUrl = query.get("username");
+    const usernameFromUrl = query.get("username") || "Anonymous";
     const toastId = query.get("toastId");
     toast.dismiss(toastId!);
 
@@ -428,15 +513,16 @@ function handleEditorChange(content: string | undefined) {
         username: usernameFromUrl,
       });
 
-      socketRef.current.on(ACTIONS.JOINED, ({ clients, username }) => {
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username } ) => {
         if (username !== usernameFromUrl) {
           toast.success(`${username} joined the room.`);
+          handleAddNotification('USER_JOIN', { username });
         }
         setClients(clients);
       });
 
       socketRef.current.on(ACTIONS.LOAD_MESSAGES, (chatHistory: Message[]) => {
-        console.log("Loaded messages from server:", chatHistory);
+        // console.log("Loaded messages from server:", chatHistory);
         setMessages(chatHistory); // Update chat history from server
       });
 
@@ -444,9 +530,41 @@ function handleEditorChange(content: string | undefined) {
         ACTIONS.DISCONNECTED,
         ({ username, socketId }: { username: string; socketId: string }) => {
           toast.success(`${username} left the room.`);
+          handleAddNotification('USER_LEAVE', { username });
           setClients((prev: any) => {
             return prev.filter((client: any) => client.socketId !== socketId);
           });
+        }
+      );
+
+      socketRef.current.on(ACTIONS.NOTIFICATION_ADDED, ({ notification} : { notification: Notification }) => {
+        setNotifications(prev => [notification, ...prev]);
+      });
+
+      // NEW: Listen for remote cursor change events
+      socketRef.current.on(
+        ACTIONS.CURSOR_CHANGE,
+        (data: {
+          username: string;
+          position: monaco.Position;
+          filePath: string;
+        }) => {
+          console.log(
+            "Received cursor change event: ",
+            data,
+            "activeFile:",
+            activeFileGlobal?.path
+          );
+          // Ignore our own cursor events
+          console.log(
+            "data.filePath !== activeFileGlobal.path",
+            data.filePath, "!==", activeFileGlobal);
+          
+          // if(data.filePath !== activeFileGlobal?.path) return;
+          console.log(username, "!==", data.username,data.username === username );
+          
+          if (data.username === username) return;
+          updateRemoteCursor(data.username, data.position, data.username);
         }
       );
 
@@ -486,11 +604,91 @@ function handleEditorChange(content: string | undefined) {
         socketRef.current.off(ACTIONS.JOINED);
         socketRef.current.off(ACTIONS.DISCONNECTED);
         socketRef.current.off(ACTIONS.CODE_CHANGE);
+        socketRef.current.off(ACTIONS.NOTIFICATION_ADDED);
         socketRef.current.disconnect();
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Function to update a remote user's cursor decoration
+  // Function to update a remote user's cursor decoration
+  const updateRemoteCursor = (
+    remoteUserId: string,
+    position: monaco.Position,
+    remoteUsername: string
+  ) => {
+    if (!editorRef.current || !monacoRef.current) return;
+    console.log("Updating remote cursor for:", remoteUserId, "at", position);
+
+    const newDecorations = [
+      {
+        range: new monacoRef.current.Range(
+          position.lineNumber,
+          position.column,
+          position.lineNumber,
+          position.column
+        ),
+        options: {
+          className: "remote-cursor", // Defined in your CSS
+          beforeContentClassName: "remote-cursor-label",
+          hoverMessage: { value: `👤 ${remoteUsername}` },
+        },
+      },
+    ];
+
+    // Use remoteUserId as the key
+    const oldDecorations = remoteCursorDecorations.current[remoteUserId] || [];
+    console.log("Old Decorations:", oldDecorations);
+
+    const newDecoIds = (editorRef.current as any).deltaDecorations(
+      oldDecorations,
+      newDecorations
+    );
+
+    remoteCursorDecorations.current[remoteUserId] = newDecoIds;
+    console.log(
+      "Updated remote cursor for",
+      remoteUserId,
+      "New Decorations:",
+      newDecoIds
+    );
+  };
+
+  // When the editor mounts, set up the Monaco instance and add our local cursor listener.
+  function handleEditorDidMount(editor: any, monaco: Monaco) {
+    console.log("Monaco Editor mounted");
+
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    // Listen for local cursor position changes and emit the event.
+    editor.onDidChangeCursorPosition((e: any) => {
+      const currentFilePath = activeFileGlobal?.path;
+      console.log(
+        "Local cursor changed:",
+        e.position,
+        "activeFile:",
+        currentFilePath
+      );
+
+      // Only emit if a filePath exists
+      if (!currentFilePath) {
+        console.warn("No active file path available!");
+        return;
+      }
+
+      const payload = {
+        roomId,
+        username,
+        position: e.position,
+        filePath: activeFileGlobal?.path,
+      };
+      console.log("Emitting payload:", payload);
+      socketRef.current?.emit(ACTIONS.CURSOR_CHANGE, payload);
+      
+    });
+  }
 
   useEffect(() => {
     if (isFileExplorerUpdated && socketRef.current) {
@@ -540,7 +738,7 @@ function handleEditorChange(content: string | undefined) {
             "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
-         <SettingsIcon
+        <SettingsIcon
           onClick={() => handleTabChange(3)}
           sx={{
             cursor: "pointer",
@@ -558,67 +756,91 @@ function handleEditorChange(content: string | undefined) {
             "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
-        <button
-        onClick={toggleSidebar}
-        className="text-white text-lg"
-        >
-        {isCollapsed ?
-          <ArrowBackIcon
+        <NotificationsIcon
+          onClick={() => handleTabChange(5)}
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
-            "&:hover": { color: "rgb(22 163 74)" },
-          }}
-        /> :
-        <ArrowForwardIcon
-          sx={{
-            cursor: "pointer",
-            fontSize: "2rem",
-            color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+            color: activeTab === 5 ? "rgb(22 163 74)" : "#8c7f91",
             "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
-        }
+        <button onClick={toggleSidebar} className="text-white text-lg">
+          {isCollapsed ? (
+            <ArrowBackIcon
+              sx={{
+                cursor: "pointer",
+                fontSize: "2rem",
+                color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+                "&:hover": { color: "rgb(22 163 74)" },
+              }}
+            />
+          ) : (
+            <ArrowForwardIcon
+              sx={{
+                cursor: "pointer",
+                fontSize: "2rem",
+                color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+                "&:hover": { color: "rgb(22 163 74)" },
+              }}
+            />
+          )}
         </button>
       </div>
-      {
-        !isCollapsed && (
-          <div className="w-full md:w-[30%] lg:w-[30%] md:h-screen bg-[#right] border-r border-r-[#605c5c]">
+      {!isCollapsed && (
+        <div className="w-full md:w-[30%] lg:w-[30%] md:h-screen bg-[#right] border-r border-r-[#605c5c]">
           {activeTab === 0 && (
-              <FileExplorer
-                fileExplorerData={fileExplorerData}
-                setFileExplorerData={setFileExplorerData}
-                activeFile={activeFile}
-                setActiveFile={setActiveFile}
-                files={files}
-                setFiles={setFiles}
-                isFileExplorerUpdated={isFileExplorerUpdated}
-                setIsFileExplorerUpdated={setIsFileExplorerUpdated}
-                roomId={roomId as string}
-                filesContentMap={filesContentMap}
-              />
-            )}
-            {activeTab === 1 && (
-              <Peoples clients={clients} roomId={roomId as string} />
-            )}
-            {activeTab === 2 && username && roomId && (
-              <Chat socket={socketRef.current} username={username} roomId={roomId as string} />
-            )}
-            {activeTab === 3 && (
-              <ThemeSwitcher />
-            )}
-            {activeTab === 4 && (
-              <AiSuggestionSidebar
-                isOpen={true}
-                aiResponse={aiResponse}
-                isLoading={aiLoading}
-              />
-            )}
-          </div>
-        )
-      }
-      <div className={`coegle_editor h-screen ${isCollapsed ? "md:w-[99.5%]" : "md:w-[95%]"}`}>
+            <FileExplorer
+              fileExplorerData={fileExplorerData}
+              setFileExplorerData={setFileExplorerData}
+              activeFile={activeFile}
+              setActiveFile={setActiveFile}
+              files={files}
+              setFiles={setFiles}
+              isFileExplorerUpdated={isFileExplorerUpdated}
+              setIsFileExplorerUpdated={setIsFileExplorerUpdated}
+              roomId={roomId as string}
+              filesContentMap={filesContentMap}
+              notifications={notifications}
+              setNotifications={setNotifications}
+            socket={socketRef}
+            username={username}
+          />
+          )}
+          {activeTab === 1 && (
+            <Peoples clients={clients} roomId={roomId as string} />
+          )}
+          {activeTab === 2 && username && roomId && (
+            <Chat
+              socket={socketRef.current}
+              username={username}
+              roomId={roomId as string}
+            />
+          )}
+          {activeTab === 3 && <ThemeSwitcher />}
+          {activeTab === 4 && (
+            <AiSuggestionSidebar
+              isOpen={true}
+              aiResponse={aiResponse}
+              isLoading={aiLoading}
+            />
+          )}
+          {activeTab === 5 && (
+          <ActivityLog
+            notifications={notifications}
+            onRefresh={async () => {
+              const refreshedNotifications = await getNotifications(roomId as string);
+              setNotifications(refreshedNotifications);
+            }}
+          />
+        )}
+      </div>
+      )}
+      <div
+        className={`coegle_editor h-screen ${
+          isCollapsed ? "md:w-[99.5%]" : "md:w-[95%]"
+        }`}
+      >
         <div className="h-[5vh] w-full flex overflow-y-auto mb-2">
           {files.map((file, index) => {
             return (
@@ -643,11 +865,13 @@ function handleEditorChange(content: string | undefined) {
           })}
         </div>
         {activeFile.name && files.length > 0 ? (
-          <div className={`w-full h-[93vh] ${
-            isCollapsed ? "md:w-[99.5%]" : "md:w-[97%]"
-          } md:h-screen transition-all duration-300`}>
+          <div
+            className={`w-full h-[93vh] ${
+              isCollapsed ? "md:w-[99.5%]" : "md:w-[97%]"
+            } md:h-screen transition-all duration-300`}
+          >
             <Editor
-              height={isOutputExpand ? "60%" : "86%"}
+              height={isOutputExpand ? "60%" : "70%"}
               path={activeFile.name}
               defaultLanguage={activeFile.language}
               defaultValue={activeFile.content}
@@ -659,7 +883,7 @@ function handleEditorChange(content: string | undefined) {
                 minimap: {
                   enabled: false,
                 },
-                fontSize:fontSize,
+                fontSize: fontSize,
                 cursorStyle: "line",
                 lineNumbersMinChars: 4,
                 quickSuggestions: true,

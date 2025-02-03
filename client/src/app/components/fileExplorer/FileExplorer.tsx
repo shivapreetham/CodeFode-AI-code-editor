@@ -144,11 +144,11 @@ function FileExplorer({
   }, [isFileExplorerUpdated, saveWorkspaceChanges]);
 
   return (
-    <div className="text-[#aaaaaa] p-4">
+    <div className="text-green-600 p-4">
       <Typography
         variant="h6"
         component="h6"
-        className="border-b border-[#aaaaa] pb-1 mb-2"
+        className="border-b border-[#aaaaa] pb-1 mb-2 font-bold text-green-600"
       >
         EDITOR
       </Typography>

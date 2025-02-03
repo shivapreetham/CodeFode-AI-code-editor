@@ -40,7 +40,7 @@ const filesContentMap = new Map<string, IFile>();
 const DEFAULT_FILE = {
   name: "index.js",
   language: "javascript",
-  content: `console.log(\`You are awesome 🤟\`)`,
+  content: `console.log(\`Happy Coding\`)`,
   path: "/root/index.js",
 };
 
@@ -517,8 +517,8 @@ function handleEditorChange(content: string | undefined) {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 0 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 0 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <PeopleAltIcon
@@ -526,8 +526,8 @@ function handleEditorChange(content: string | undefined) {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 1 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 1 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
 
@@ -536,8 +536,8 @@ function handleEditorChange(content: string | undefined) {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 2 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 2 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
          <SettingsIcon
@@ -545,8 +545,8 @@ function handleEditorChange(content: string | undefined) {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 3 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 3 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <AutoFixHighIcon
@@ -554,8 +554,8 @@ function handleEditorChange(content: string | undefined) {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 4 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <button
@@ -567,16 +567,16 @@ function handleEditorChange(content: string | undefined) {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 4 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         /> :
         <ArrowForwardIcon
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 4 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         }
@@ -672,7 +672,7 @@ function handleEditorChange(content: string | undefined) {
               <div className="bg-[#252522] border-t rounded-sm border-[#aaaaaa50]">
                 <div
                   onClick={handleToggleOutputVisibility}
-                  className="bg-[#1e1e1e] cursor-pointer flex items-center justify-between bg-transparent text-[#f29221] px-4 py-2 font-semibold"
+                  className="bg-[#1e1e1e] cursor-pointer flex items-center justify-between bg-transparent text-green-600 px-4 py-2 font-semibold"
                 >
                   <span>Output</span>
                   <span>
@@ -708,7 +708,7 @@ function handleEditorChange(content: string | undefined) {
                 <button
                   type="button"
                   onClick={handleRunCode}
-                  className="py-2 px-10 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-[#fec76f] hover:bg-[#fec76fe6] text-[#000]"
+                  className="py-2 px-10 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-green-500 hover:bg-green-400 text-[#000]"
                   id="hs-basic-collapse"
                   aria-expanded="false"
                   aria-controls="hs-basic-collapse-heading"

@@ -1,5 +1,5 @@
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
-import React, { Dispatch, SetStateAction, useState } from "react";
+import React, { Dispatch, SetStateAction, useContext, useState } from "react";
 import FileIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import ArrowIcon from "@mui/icons-material/ArrowForwardIosOutlined";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
@@ -8,6 +8,7 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import EditIcon from "@mui/icons-material/EditOutlined";
 import { IFile } from "@/interfaces/IFile";
 import { getLanguageByFileExtension } from "@/utils/getLanguageByExt";
+import { ActiveFileContext } from "@/context/ActiveFileContext";
 
 interface FileExplorereNodeProps {
   fileExplorerNode: IFileExplorerNode;
@@ -44,6 +45,7 @@ const FileExplorerNode = ({
   const [expand, setExpand] = useState(true);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(fileExplorerNode.name);
+  const { activeFileGlobal, setActiveFileGlobal } = useContext(ActiveFileContext);
 
   const handleOpenFile = () => {
     const file = {
@@ -54,6 +56,7 @@ const FileExplorerNode = ({
     };
     setActiveFile(file);
     console.log("file", file.path);
+    setActiveFileGlobal(file);
     
     const existingFile = files.filter(
       (file) => file.path === fileExplorerNode.path

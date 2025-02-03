@@ -100,7 +100,7 @@ const Page = () => {
     details: { username: string; fileName?: string; folderName?: string; path?: string }
   ) => {
     try {
-      console.log("adding notification")
+      // console.log("adding notification")
       const message = createNotificationMessage(type, details);
       const metadata = {
         path: details.path,
@@ -478,7 +478,7 @@ function handleEditorChange(content: string | undefined) {
       });
 
       socketRef.current.on(ACTIONS.LOAD_MESSAGES, (chatHistory: Message[]) => {
-        console.log("Loaded messages from server:", chatHistory);
+        // console.log("Loaded messages from server:", chatHistory);
         setMessages(chatHistory); // Update chat history from server
       });
 

@@ -7,22 +7,23 @@ import Image from "next/image";
 
 const creators = [
   {
-    name: "John Doe",
-    github: "https://github.com/johndoe",
-    linkedin: "https://www.linkedin.com/in/johndoe",
-    email: "johndoe@example.com",
+    name: "Pritam Roy",
+    github: "https://github.com/HiiiiiPritam",
+    linkedin: "https://www.linkedin.com/in/pritam-roy-95185328a",
+    email: "ratsdust4226@gmail.com",
   },
   {
-    name: "Jane Smith",
-    github: "https://github.com/janesmith",
-    linkedin: "https://www.linkedin.com/in/janesmith",
-    email: "janesmith@example.com",
+    name: "Aditya Raj",
+    github: "https://github.com/raj-adi00",
+    linkedin: "www.linkedin.com/in/aditya-raj-338a8527a",
+    email: "adi.adityakohli2005@gmail.com",
+
   },
   {
-    name: "Alice Johnson",
-    github: "https://github.com/alicejohnson",
-    linkedin: "https://www.linkedin.com/in/alicejohnson",
-    email: "alicejohnson@example.com",
+    name: "Shivapreetham H.S.",
+    github: "https://github.com/shivapreetham",
+    linkedin: "www.linkedin.com/in/shivapreetham",
+    email: "2023ugcs120@nitjsr.ac.in",
   },
 ];
 

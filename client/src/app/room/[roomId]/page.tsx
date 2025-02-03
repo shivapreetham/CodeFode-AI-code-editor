@@ -391,22 +391,31 @@ const Page = () => {
     setCodeStatus("");
     try {
       setLoading(true);
-      handleSendCodeOutputData({ status: "loading", output: "" });
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/code/execute`,
-        data,
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
+      // handleSendCodeOutputData({ status: "loading", output: "" });
+      // const response = await axios.post(
+      //   `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/code/execute`,
+      //   data,
+      //   {
+      //     headers: {
+      //       "Content-Type": "application/x-www-form-urlencoded",
+      //     },
+      //   }
+      // );
 
-      if (response.status === 201) {
-        const intervalId = setInterval(async () => {
-          await handleCodeStatus(response.data.jobId, intervalId);
-        }, 500);
+      // if (response.status === 201) {
+      //   const intervalId = setInterval(async () => {
+      //     await handleCodeStatus(response.data.jobId, intervalId);
+      //   }, 500);
+      // }
+      if (!socketRef || !socketRef.current) {
+        toast.error("Failed to connect to websocket");
+        setLoading(false)
+        return;
       }
+      socketRef.current.emit(ACTIONS.EXECUTE_CODE, {
+        language: data.language,
+        code: data.code,
+      });
     } catch (error) {
       console.log(error);
       if ((error as AxiosError).status === 503) {
@@ -505,6 +514,13 @@ const Page = () => {
           }
         }
       );
+      
+      socketRef.current.on(ACTIONS.CODE_RESULT,(result)=>{
+        setLoading(false)
+        console.log(result)
+        setCodeOutput(result.output)
+      })
+
     };
 
     usernameFromUrl ? init() : handleLeaveRoom();

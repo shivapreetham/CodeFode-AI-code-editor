@@ -46,7 +46,7 @@ const filesContentMap = new Map<string, IFile>();
 const DEFAULT_FILE = {
   name: "index.js",
   language: "javascript",
-  content: `console.log(\`You are awesome 🤟\`)`,
+  content: `console.log(\`Happy Coding\`)`,
   path: "/root/index.js",
 };
 
@@ -715,8 +715,8 @@ const Page = () => {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 0 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 0 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <PeopleAltIcon
@@ -724,8 +724,8 @@ const Page = () => {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 1 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 1 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
 
@@ -734,8 +734,8 @@ const Page = () => {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 2 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 2 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <SettingsIcon
@@ -743,8 +743,8 @@ const Page = () => {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 3 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 3 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <AutoFixHighIcon
@@ -752,8 +752,8 @@ const Page = () => {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 4 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <NotificationsIcon
@@ -761,8 +761,8 @@ const Page = () => {
           sx={{
             cursor: "pointer",
             fontSize: "2rem",
-            color: activeTab === 5 ? "#ffe200" : "#8c7f91",
-            "&:hover": { color: "#ffe200" },
+            color: activeTab === 5 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
         <button onClick={toggleSidebar} className="text-white text-lg">
@@ -771,8 +771,8 @@ const Page = () => {
               sx={{
                 cursor: "pointer",
                 fontSize: "2rem",
-                color: activeTab === 4 ? "#ffe200" : "#8c7f91",
-                "&:hover": { color: "#ffe200" },
+                color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+                "&:hover": { color: "rgb(22 163 74)" },
               }}
             />
           ) : (
@@ -780,8 +780,8 @@ const Page = () => {
               sx={{
                 cursor: "pointer",
                 fontSize: "2rem",
-                color: activeTab === 4 ? "#ffe200" : "#8c7f91",
-                "&:hover": { color: "#ffe200" },
+                color: activeTab === 4 ? "rgb(22 163 74)" : "#8c7f91",
+                "&:hover": { color: "rgb(22 163 74)" },
               }}
             />
           )}
@@ -871,7 +871,7 @@ const Page = () => {
             } md:h-screen transition-all duration-300`}
           >
             <Editor
-              height={isOutputExpand ? "60%" : "86%"}
+              height={isOutputExpand ? "60%" : "70%"}
               path={activeFile.name}
               defaultLanguage={activeFile.language}
               defaultValue={activeFile.content}
@@ -896,7 +896,7 @@ const Page = () => {
               <div className="bg-[#252522] border-t rounded-sm border-[#aaaaaa50]">
                 <div
                   onClick={handleToggleOutputVisibility}
-                  className="bg-[#1e1e1e] cursor-pointer flex items-center justify-between bg-transparent text-[#f29221] px-4 py-2 font-semibold"
+                  className="bg-[#1e1e1e] cursor-pointer flex items-center justify-between bg-transparent text-green-600 px-4 py-2 font-semibold"
                 >
                   <span>Output</span>
                   <span>
@@ -932,7 +932,7 @@ const Page = () => {
                 <button
                   type="button"
                   onClick={handleRunCode}
-                  className="py-2 px-10 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-[#fec76f] hover:bg-[#fec76fe6] text-[#000]"
+                  className="py-2 px-10 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-green-500 hover:bg-green-400 text-[#000]"
                   id="hs-basic-collapse"
                   aria-expanded="false"
                   aria-controls="hs-basic-collapse-heading"

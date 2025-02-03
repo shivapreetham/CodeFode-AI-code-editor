@@ -56,7 +56,7 @@ const Chat: React.FC<ChatProps> = ({ socket, username, roomId }) => {
   return (
     <div className="flex md:flex-col justify-between md:h-screen p-2 md:p-4 items-center">
       <div className="w-full hidden md:flex gap-4 flex-wrap overflow-y-auto mb-5 px-2">
-        <div className="text-black w-[90px] h-8 flex items-center justify-center rounded bg-[#fec76f]">
+        <div className="text-black w-[90px] h-8 flex items-center justify-center rounded bg-green-400">
           Chat
         </div>
         <div className="w-full h-[0.5px] bg-[#aaaaaa]"></div>
@@ -87,7 +87,7 @@ const Chat: React.FC<ChatProps> = ({ socket, username, roomId }) => {
         />
         <button
           onClick={sendMessage}
-          className="h-8 md:h-10 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          className="h-8 md:h-10 px-4 text-sm font-medium text-white bg-green-800 rounded-lg hover:bg-green-600"
         >
           Send
         </button>

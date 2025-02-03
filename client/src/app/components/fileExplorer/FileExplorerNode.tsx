@@ -150,7 +150,7 @@ const FileExplorerNode = ({
         onDrop={handleDrop}
       >
         <div
-          className="flex justify-between items-center cursor-pointer hover:border-l-2 hover:border-l-[#fec76f] hover:text-[#fec76f] py-1 px-2"
+          className="flex justify-between items-center cursor-pointer hover:border-l-2 hover:border-green-500 hover:text-green-400 py-1 px-2"
           onClick={() => setExpand(!expand)}
           onMouseOver={() => setDisplayNodeControls(true)}
           onMouseLeave={() => setDisplayNodeControls(false)}
@@ -168,7 +168,7 @@ const FileExplorerNode = ({
                 onBlur={submitRename}
                 onKeyDown={(e) => e.key === "Enter" && submitRename()}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#f9f5f526] text-[#fec76f] outline-none px-2"
+                className="bg-[#f9f5f526] text-green-400 outline-none px-2"
               />
             ) : (
               fileExplorerNode.name
@@ -206,7 +206,7 @@ const FileExplorerNode = ({
                 onKeyDown={onAddFolderOrFile}
                 onBlur={() => setShowInput({ ...showInput, visible: false })}
                 type="text"
-                className="w-full text-[#fec76f] outline-none px-2 bg-[#f9f5f526]"
+                className="w-full text-green-400 outline-none px-2 bg-[#f9f5f526]"
               />
             </div>
           )}
@@ -240,14 +240,14 @@ const FileExplorerNode = ({
         onMouseOver={() => setDisplayNodeControls(true)}
         onMouseLeave={() => setDisplayNodeControls(false)}
         className={
-          "flex items-center justify-between gap-1 cursor-pointer hover:border-l-2 hover:border-l-[#fec76f] hover:text-[#fec76f] p-[5px] " +
+          "flex items-center justify-between gap-1 cursor-pointer hover:border-l-2 hover:border-l-[#35a14e] hover:text-[#48b041] p-[5px] " +
           (activeFile.path === fileExplorerNode.path
-            ? "border-l-2 border-l-[#fec76f] text-[#fec76f]"
+            ? "border-l-2 border-l-[#165a17] text-[#1a6e24]"
             : "")
         }
       >
         <span className="flex gap-1 items-center">
-          <FileIcon className="text-xl" />
+          <FileIcon className="text-xl text-green-500" />
           {isRenaming ? (
             <input
               autoFocus
@@ -256,10 +256,10 @@ const FileExplorerNode = ({
               onBlur={submitRename}
               onKeyDown={(e) => e.key === "Enter" && submitRename()}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#f9f5f526] text-[#fec76f] outline-none px-2"
+              className="bg-[#f9f5f526] text-green-400 outline-none px-2"
             />
           ) : (
-            <span className="truncate">{fileExplorerNode.name}</span>
+            <span className="truncate text-green-400">{fileExplorerNode.name}</span>
           )}
         </span>
         {displayNodeControls && (

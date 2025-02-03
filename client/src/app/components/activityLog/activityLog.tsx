@@ -79,7 +79,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
   );
 
   return (
-    <div className="h-screen bg-[#2d2a2a] text-white flex flex-col">
+    <div className="h-screen bg-[#2d2a2a]  flex flex-col text-green-400">
       <div className="p-4 border-b border-[#4e4b4b] flex justify-between items-center">
         <h2 className="text-lg font-semibold">Activity Log</h2>
         <div className="flex gap-2">

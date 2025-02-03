@@ -454,7 +454,7 @@ function handleEditorChange(content: string | undefined) {
             ["success", "failed"].includes(payload.codeOutputData.status) &&
               setIsOutputExpand(true);
           } else {
-            setActiveFile(payload.activeFile);
+            // setActiveFile(payload.activeFile);
             setFileExplorerData(payload.fileExplorerData);
             setFiles(payload.openFiles);
             filesContentMap.set(payload.activeFile.path, payload.activeFile);

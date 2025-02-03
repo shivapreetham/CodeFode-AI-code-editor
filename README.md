@@ -128,9 +128,9 @@ npm run dev
 Distributed under the MIT License. See LICENSE for more information.
 
 ## 📞 Contact
-Your Name - your.email@example.com
+Your Name - ratsdust4226@gmail.com
 
-Project Link: [https://github.com/yourusername/ai-code-editor](https://github.com/yourusername/ai-code-editor)
+Project Link: (https://github.com/HiiiiiPritam/ai-code-editor)
 
 ## 🙌 Acknowledgements
 - Next.js

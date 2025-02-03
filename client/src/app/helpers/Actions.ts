@@ -11,5 +11,8 @@ export const ACTIONS = {
     GET_MESSAGES : "get-messages",
     NOTIFICATION_ADDED: 'notification_added',
     NOTIFICATIONS_LOADED: 'notifications_loaded',
+    CURSOR_CHANGE : "cursor-change",
+    EXECUTE_CODE: "execute-code",
+    CODE_RESULT: "code-result",
 };
 

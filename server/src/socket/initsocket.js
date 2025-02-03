@@ -1,8 +1,9 @@
 import { Server } from "socket.io";
 import http from "http";
 import { ACTIONS } from "../constants/actions.js";
-
 import express from "express";
+import {z} from "zod"
+import executeCode from "../controllers/runInContainer.js";
 
 const app = express();
 
@@ -12,6 +13,7 @@ const server = http.createServer(app);
   const userSocketMap = {};
   const userRoomMap = {}; // Maps socket ID to room ID
   const chatMessages = {}; // Maps room ID to chat messages
+  const rateLimiter = new Map();
 
   const getAllConnectedClients = (roomId) => {
     return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
@@ -98,6 +100,30 @@ const server = http.createServer(app);
 
       console.log("username", username, "position", position);
     });
+
+    socket.on(ACTIONS.EXECUTE_CODE,async(data)=>{
+      console.log(data)
+      const now=Date.now();
+      const lastExecution=rateLimiter.get(socket.id) || 0;
+      if(now-lastExecution <1000){
+        socket.emit(ACTIONS.CODE_RESULT, {
+          success: false,
+          output: "Please wait before executing more code",
+        });
+        return;
+      }
+      rateLimiter.set(socket.id, now);
+      try {
+        const result = await executeCode(data.language, data.code);
+        // console.log(result)
+        socket.emit(ACTIONS.CODE_RESULT, result);
+      } catch (error) {
+        socket.emit(ACTIONS.CODE_RESULT, {
+          success: false,
+          output: error.message || "Failed to execute code...",
+        });
+      }
+    })
 
     socket.on("disconnecting", () => {
       const rooms = [...socket.rooms];

@@ -25,7 +25,7 @@ const filesContentSchema = new mongoose.Schema({
 const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['FILE_CREATE', 'FILE_UPDATE', 'FILE_DELETE', 'FOLDER_CREATE', 'FOLDER_DELETE', 'USER_JOIN', 'USER_LEAVE', 'CODE_EXECUTE'],
+    enum: ['FILE_CREATE', 'FILE_UPDATE', 'FILE_DELETE','FILE_MOVE', 'FOLDER_CREATE', 'FOLDER_DELETE', 'USER_JOIN', 'USER_LEAVE', 'CODE_EXECUTE'],
     required: true
   },
   message: {

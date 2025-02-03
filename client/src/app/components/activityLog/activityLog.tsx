@@ -17,7 +17,7 @@ export interface NotificationMetadata {
 
 export interface Notification {
   _id?: string;
-  type: 'FILE_CREATE' | 'FILE_UPDATE' | 'FILE_DELETE' | 'FOLDER_CREATE' | 
+  type: 'FILE_CREATE' | 'FILE_UPDATE' | 'FILE_DELETE' |'FILE_MOVE' | 'FOLDER_CREATE' |'FOLDER_MOVE' |
         'FOLDER_DELETE' | 'USER_JOIN' | 'USER_LEAVE' | 'CODE_EXECUTE';
   message: string;
   username: string;

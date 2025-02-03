@@ -2,6 +2,8 @@ import { Workspace } from '../models/workspace.js';
 
 export const getNotifications = async (req, res) => {
 try {
+
+        console.log("Fetching notifications...");
         const { roomId } = req.params;
         const workspace = await Workspace.findOne({ roomId });
         
@@ -23,6 +25,7 @@ try {
 
 export const addNotification = async (req, res) => {
     try {
+            console.log("Adding notification...");
             const { roomId } = req.params;
             const { type, message, username, metadata } = req.body;
     
@@ -88,6 +91,8 @@ export const cleanUpNotification = async (req, res) => {
     }
 
 export const getFilteredNotifications = async (req, res) => {
+
+    console.log("filtered notifications...");
     try {
         const { roomId } = req.params;
         const { type, startDate, endDate, username } = req.query;

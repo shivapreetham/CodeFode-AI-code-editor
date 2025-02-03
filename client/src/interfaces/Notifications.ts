@@ -1,9 +1,9 @@
-// src/interfaces/Notification.ts
-
 export type NotificationType = 
   | 'FILE_CREATE' 
   | 'FILE_UPDATE' 
   | 'FILE_DELETE' 
+  | 'FOLDER_MOVE'
+  | 'FILE_MOVE'
   | 'FOLDER_CREATE' 
   | 'FOLDER_DELETE' 
   | 'USER_JOIN' 

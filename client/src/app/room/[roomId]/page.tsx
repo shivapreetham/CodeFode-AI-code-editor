@@ -407,7 +407,11 @@ function handleEditorChange(content: string | undefined) {
       language: activeFile.language,
       extension: activeFile.name.split(".")[1],
     };
-
+    handleAddNotification('CODE_EXECUTE', {
+      username: username || 'anonymous',
+      fileName: activeFile.name,
+      path: activeFile.path
+    })
     if (!["cpp", "py", "js"].includes(data.extension)) {
       toast.error(
         `Unsupported programming language (${data.language}). Supported languages are C++, Python, and JavaScript.`
@@ -465,7 +469,7 @@ function handleEditorChange(content: string | undefined) {
         username: usernameFromUrl,
       });
 
-      socketRef.current.on(ACTIONS.JOINED, ({ clients, username }) => {
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username } ) => {
         if (username !== usernameFromUrl) {
           toast.success(`${username} joined the room.`);
           handleAddNotification('USER_JOIN', { username });
@@ -620,7 +624,8 @@ function handleEditorChange(content: string | undefined) {
             filesContentMap={filesContentMap}
             notifications={notifications}
             setNotifications={setNotifications}
-            socket={socketRef.current}
+            socket={socketRef}
+            username={username}
           />
         )}
         {activeTab === 1 && (

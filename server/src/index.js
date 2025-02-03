@@ -18,7 +18,7 @@ const PORT =process.env.PORT  || 8000 ;
 app.use('/api/user',userRoutes);
 app.use('/api/workspace',workspaceRouters)
 app.use('/api/ai',aiRoutes)
-app.use('/api/notification',notificationRoutes)
+app.use('/api/notifications',notificationRoutes)
 
 console.log("mongodb uri", process.env.MONGODB_URI);
 

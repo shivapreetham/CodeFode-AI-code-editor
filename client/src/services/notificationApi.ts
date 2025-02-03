@@ -4,6 +4,8 @@ type NotificationType =
   | 'FILE_CREATE' 
   | 'FILE_UPDATE' 
   | 'FILE_DELETE' 
+  | 'FILE_MOVE'
+  | 'FOLDER_MOVE'
   | 'FOLDER_CREATE' 
   | 'FOLDER_DELETE' 
   | 'USER_JOIN' 

@@ -5,8 +5,10 @@ import { Typography } from "@mui/material";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
 import { IFile } from "@/interfaces/IFile";
 import { workspaceApi } from "@/services/workspaceApi";
-
-
+import { getFileLanguage } from "@/app/helpers/getFileLanguage";
+import { getNotifications, addNotification, createNotificationMessage } from '@/services/notificationApi';
+import { Notification, NotificationType } from "@/interfaces/Notifications";
+import {ACTIONS} from "@/app/helpers/Actions";
 
 interface FileExplorerProps {
   fileExplorerData: IFileExplorerNode;
@@ -19,6 +21,9 @@ interface FileExplorerProps {
   setIsFileExplorerUpdated: Dispatch<SetStateAction<boolean>>;
   roomId: string;
   filesContentMap: Map<string, IFile>;
+  notifications: Notification[];
+  setNotifications: Dispatch<SetStateAction<Notification[]>>,
+  socket: any
 }
 
 function FileExplorer({
@@ -31,9 +36,49 @@ function FileExplorer({
   isFileExplorerUpdated,
   setIsFileExplorerUpdated,
   roomId,
-  filesContentMap
+  filesContentMap,
+  notifications,
+  setNotifications,
+  socket
 }: FileExplorerProps) {
   const { insertNode, deleteNode, renameNode, moveNode } = useTraverseTree();
+
+ const handleAddNotification = async (
+    type: NotificationType,
+    details: { username: string; fileName?: string; folderName?: string; path?: string }
+  ) => {
+    try {
+      const message = createNotificationMessage(type, details);
+      const metadata = {
+        path: details.path,
+        language: details.fileName ? getFileLanguage(details.fileName) : undefined,
+      };
+
+      const newNotification = await addNotification(roomId as string, {
+        type,
+        message,
+        username: details.username,
+        metadata
+      });
+
+      const typedNotification: Notification = {
+        type: newNotification.type as NotificationType,
+        message: newNotification.message,
+        username: newNotification.username,
+        timestamp: new Date(newNotification.timestamp),
+        metadata: newNotification.metadata
+      };
+
+      setNotifications(prev => [typedNotification, ...prev]);
+      
+      socket.current?.emit(ACTIONS.NOTIFICATION_ADDED, {
+        roomId,
+        notification: typedNotification
+      });
+    } catch (error) {
+      console.error('Error adding notification:', error);
+    }
+  };
 
   const saveWorkspaceChanges = useCallback(async () => {
     const payload = {

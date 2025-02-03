@@ -9,5 +9,7 @@ export const ACTIONS = {
     RECEIVE_MESSAGE: "receive-message",
     LOAD_MESSAGES : "load-messages",
     GET_MESSAGES : "get-messages",
+    NOTIFICATION_ADDED: 'notification_added',
+    NOTIFICATIONS_LOADED: 'notifications_loaded',
 };
 

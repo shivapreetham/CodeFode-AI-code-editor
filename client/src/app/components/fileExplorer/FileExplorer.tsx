@@ -1,10 +1,11 @@
-import React, { Dispatch, SetStateAction, useEffect, useCallback } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useCallback, useContext } from "react";
 import { useTraverseTree } from "@/hooks/useTraverseTree";
 import FileExplorerNode from "./FileExplorerNode";
 import { Typography } from "@mui/material";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
 import { IFile } from "@/interfaces/IFile";
 import { workspaceApi } from "@/services/workspaceApi";
+import { ActiveFileContext } from "@/context/ActiveFileContext";
 import { getFileLanguage } from "@/app/helpers/getFileLanguage";
 import { getNotifications, addNotification, createNotificationMessage } from '@/services/notificationApi';
 import { Notification, NotificationType } from "@/interfaces/Notifications";

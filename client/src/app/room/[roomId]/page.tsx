@@ -37,6 +37,7 @@ import ThemeSwitcher from "@/app/components/theme/ThemeComp";
 import { ThemeContext } from "@/context/ThemeContext";
 import { FontSizeContext } from "@/context/FontSizeContext";
 import { useSession } from "next-auth/react";
+import { ActiveFileContext } from "@/context/ActiveFileContext";
 import { getNotifications, addNotification, createNotificationMessage } from '@/services/notificationApi';
 import { getFileLanguage } from "@/app/helpers/getFileLanguage";
 
@@ -73,6 +74,7 @@ const Page = () => {
   const { messages, setMessages } = useContext(ChatContext);
   const { theme, setTheme } = useContext(ThemeContext);
   const { fontSize, setFontSize } = useContext(FontSizeContext);
+  const { activeFileGlobal, setActiveFileGlobal } = useContext(ActiveFileContext);
 
   const { roomId } = params;
 
@@ -258,6 +260,7 @@ const Page = () => {
           setFileExplorerData(workspace.fileExplorerData);
           setFiles(workspace.openFiles);
           setActiveFile(workspace.activeFile);
+          setActiveFileGlobal(workspace.activeFile);
 
           // Clear and update filesContentMap
           filesContentMap.clear();
@@ -269,6 +272,7 @@ const Page = () => {
           setFileExplorerData(DEFAULT_EXPLORER);
           setFiles([DEFAULT_FILE]);
           setActiveFile(DEFAULT_FILE);
+          setActiveFileGlobal(DEFAULT_FILE);
           filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
         }
       } catch (error) {
@@ -277,6 +281,7 @@ const Page = () => {
         setFileExplorerData(DEFAULT_EXPLORER);
         setFiles([DEFAULT_FILE]);
         setActiveFile(DEFAULT_FILE);
+        setActiveFileGlobal(DEFAULT_FILE);
         filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
       } finally {
         setLoading(false);
@@ -309,7 +314,7 @@ const Page = () => {
 
       setIsFileExplorerUpdated(false);
     }
-  }, [isFileExplorerUpdated, fileExplorerData, files, activeFile, roomId]);
+  }, [isFileExplorerUpdated, fileExplorerData, files, activeFile,activeFileGlobal, roomId]);
 
   // function handleEditorDidMount(editor: any, monaco: any) {
   //   editorRef.current = editor;
@@ -342,6 +347,7 @@ const Page = () => {
             path: "",
           };
     setActiveFile(updatedActiveFile);
+    setActiveFileGlobal(updatedActiveFile);
     setFiles(updatedOpenFiles);
     handleAddNotification('FILE_UPDATE', {
       username: username || 'anonymous',
@@ -361,6 +367,7 @@ const Page = () => {
 
   const handleChangeActiveFile = (file: IFile) => {
     setActiveFile(file);
+    setActiveFileGlobal(file);
   };
 
   const handleToggleOutputVisibility = () => {
@@ -546,14 +553,16 @@ const Page = () => {
             "Received cursor change event: ",
             data,
             "activeFile:",
-            activeFile.path
+            activeFileGlobal?.path
           );
           // Ignore our own cursor events
           console.log(
-            "data.filePath !== activeFile.path",
-            data.filePath, "!==", activeFile);
+            "data.filePath !== activeFileGlobal.path",
+            data.filePath, "!==", activeFileGlobal);
           
-          if(data.filePath !== activeFile.path) return;
+          // if(data.filePath !== activeFileGlobal?.path) return;
+          console.log(username, "!==", data.username,data.username === username );
+          
           if (data.username === username) return;
           updateRemoteCursor(data.username, data.position, data.username);
         }
@@ -610,6 +619,7 @@ const Page = () => {
     remoteUsername: string
   ) => {
     if (!editorRef.current || !monacoRef.current) return;
+    console.log("Updating remote cursor for:", remoteUserId, "at", position);
 
     const newDecorations = [
       {
@@ -654,7 +664,7 @@ const Page = () => {
 
     // Listen for local cursor position changes and emit the event.
     editor.onDidChangeCursorPosition((e: any) => {
-      const currentFilePath = activeFile?.path;
+      const currentFilePath = activeFileGlobal?.path;
       console.log(
         "Local cursor changed:",
         e.position,
@@ -672,7 +682,7 @@ const Page = () => {
         roomId,
         username,
         position: e.position,
-        filePath: activeFile?.path,
+        filePath: activeFileGlobal?.path,
       };
       console.log("Emitting payload:", payload);
       socketRef.current?.emit(ACTIONS.CURSOR_CHANGE, payload);
@@ -792,7 +802,7 @@ const Page = () => {
               roomId={roomId as string}
               filesContentMap={filesContentMap}
               notifications={notifications}
-            setNotifications={setNotifications}
+              setNotifications={setNotifications}
             socket={socketRef}
             username={username}
           />

@@ -9,5 +9,6 @@ export const ACTIONS = {
     RECEIVE_MESSAGE: "receive-message",
     LOAD_MESSAGES : "load-messages",
     GET_MESSAGES : "get-messages",
+    CURSOR_CHANGE : "cursor-change",
 };
 

@@ -131,9 +131,86 @@ const parsePractices = (text) => {
   return practices;
 };
 
+const parseDocumentation = (text) => {
+  const documentation = {
+    overview: '',
+    functions: [],
+    notes: ''
+  };
+
+  // Remove markdown headers and clean up text
+  const cleanedText = text
+    .replace(/##\s*SECTION:/g, 'SECTION:')
+    .replace(/\*\*/g, '')
+    .trim();
+
+  // Split into sections
+  const sections = cleanedText.split('SECTION:').filter(section => section.trim());
+
+  sections.forEach(section => {
+    // Parse Overview
+    if (section.includes('OVERVIEW:')) {
+      documentation.overview = section
+        .split('OVERVIEW:')[1]
+        .split('SECTION:')[0]
+        .trim();
+    }
+
+    // Parse Function
+    if (section.includes('FUNCTION:')) {
+      const functionParts = section.split(/\n/);
+      const functionEntry = {
+        name: '',
+        description: '',
+        params: [],
+        returns: ''
+      };
+
+      functionParts.forEach((line, index) => {
+        if (line.startsWith('FUNCTION:')) {
+          functionEntry.name = line.replace('FUNCTION:', '').trim();
+        }
+
+        if (line.startsWith('DESCRIPTION:')) {
+          functionEntry.description = line.replace('DESCRIPTION:', '').trim();
+        }
+
+        if (line.includes('PARAMS:')) {
+          const paramStart = functionParts.findIndex(l => l.includes('PARAMS:'));
+          let paramIndex = paramStart + 1;
+          while (
+            paramIndex < functionParts.length && 
+            functionParts[paramIndex].startsWith('- ')
+          ) {
+            functionEntry.params.push(
+              functionParts[paramIndex].replace('- ', '').trim()
+            );
+            paramIndex++;
+          }
+        }
+
+        if (line.startsWith('RETURNS:')) {
+          functionEntry.returns = line.replace('RETURNS:', '').trim();
+        }
+      });
+
+      documentation.functions.push(functionEntry);
+    }
+
+    // Parse Notes
+    if (section.includes('NOTES:')) {
+      documentation.notes = section
+        .split('NOTES:')[1]
+        .split('##')[0]
+        .trim();
+    }
+  });
+
+  return documentation; // Add this return statement
+};
 export const processCodeWithAI = async (code, language) => {
   try {
-    const [errorResponse, suggestionResponse, practiceResponse] = await Promise.all([
+    const [errorResponse, suggestionResponse, practiceResponse, documentationResponse] = await Promise.all([
       generateText({
         model: cohere('command-r-plus'),
         prompt: `As an expert ${language} code reviewer, analyze this code and identify all errors.
@@ -175,19 +252,36 @@ export const processCodeWithAI = async (code, language) => {
 
         Analyze this code:
         ${code}`
+      }),
+
+      generateText({
+        model: cohere('command-r-plus'),
+        prompt: `As an expert ${language} technical writer, provide comprehensive documentation for this code.
+        Format as:
+        SECTION: OVERVIEW
+        OVERVIEW: [High-level description of the codebase]
+        
+        SECTION: FUNCTION
+        FUNCTION: [Function name]
+        [Function description]
+        PARAMS:
+        - [Parameter name]: [Parameter description]
+        RETURNS: [Return value description]
+        
+        SECTION: NOTES
+        NOTES: [Additional implementation details, usage notes, or important considerations]
+    
+        Code to document:
+        ${code}`
       })
     ]);
 
-    // console.log('Raw Responses:', {
-    //   error: errorResponse.text,
-    //   suggestion: suggestionResponse.text,
-    //   practice: practiceResponse.text
-    // });
 
     const response = {
       errors: parseErrorResponse(errorResponse.text),
       suggestions: parseSuggestions(suggestionResponse.text),
       bestPractices: parsePractices(practiceResponse.text),
+      documentation : parseDocumentation(documentationResponse.text),
       timestamp: new Date().toISOString()
     };
     

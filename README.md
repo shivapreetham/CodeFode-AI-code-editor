@@ -3,6 +3,7 @@
 ## Overview
 
 This is a powerful, lightweight AI-assisted code editor that offers real-time collaboration, intelligent code assistance, and a seamless development experience. Built with cutting-edge web technologies, our editor empowers developers to write, share, and improve code more efficiently.
+[![Watch the video](https://img.youtube.com/vi/1JKeSBsQ2zA/maxresdefault.jpg)](https://youtu.be/1JKeSBsQ2zA)
 
 ## 🚀 Key Features
 

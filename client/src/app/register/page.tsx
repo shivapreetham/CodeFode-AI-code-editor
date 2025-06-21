@@ -52,6 +52,9 @@ export default function RegisterPage() {
       const res = await axios.post("/api/otp/verify-otp", {
         email: form.email,
         otp,
+        useCase: "register",
+        password: form.password,
+        name: form.name,
       });
 
       if (res.status === 200) {

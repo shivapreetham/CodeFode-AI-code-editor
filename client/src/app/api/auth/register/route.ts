@@ -10,7 +10,7 @@ export async function POST(
   try {
     const { name, email, password, provider, googleId } = await req.json();
 
-    if (!name || !email || !provider) {
+    if (!name || !email || !provider || !password) {
       return NextResponse.json(
         {
           status: 400,
@@ -22,6 +22,17 @@ export async function POST(
       );
     }
 
+    if(password.length < 6) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: "Password must be at least 6 characters long",
+          data: null,
+          success: false,
+        },
+        { status: 400 }
+      );
+    }
     await connectDB();
 
     const existingUser = await User.findOne({ email });
@@ -38,46 +49,10 @@ export async function POST(
       );
     }
 
-    let hashedPassword = null;
-
-    if (provider === "credentials") {
-      if (!password || password.length < 6) {
-        return NextResponse.json(
-          {
-            status: 400,
-            message: "Password must be at least 6 characters long",
-            data: null,
-            success: false,
-          },
-          { status: 400 }
-        );
-      }
-      hashedPassword = await hash(password, 10);
-    } else if (provider === "google" && !googleId) {
-      return NextResponse.json(
-        {
-          status: 400,
-          message: "Google ID is required for Google signup",
-          success: false,
-          data: null,
-        },
-        { status: 400 }
-      );
-    }
-
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      provider,
-      googleId,
-    });
-
     return NextResponse.json(
       {
         status: 201,
-        message: "User registered successfully",
-        data: { id: newUser._id, email: newUser.email, name: newUser.name },
+        message: "User can proceed successfully",
         success: true,
       },
       { status: 201 }

@@ -1,20 +1,29 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi"; // Icons for better UX
 
 const Header = () => {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/login");
+  };
 
   return (
     <header className="fixed w-full top-0 left-0 z-50">
       <nav className="backdrop-blur-lg bg-gray-900 bg-opacity-50 border border-gray-800 px-4 lg:px-6 py-3 rounded-lg shadow-lg mx-4 mt-4">
         <div className="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center text-white text-2xl font-semibold">
+          <Link
+            href="/"
+            className="flex items-center text-white text-2xl font-semibold"
+          >
             Code<span className="text-green-400">-Fode💻</span>
           </Link>
 
@@ -27,10 +36,17 @@ const Header = () => {
           </button>
 
           {/* Desktop Menu */}
-          <div className={`lg:flex items-center ${isOpen ? "block" : "hidden"} w-full lg:w-auto`}>
+          <div
+            className={`lg:flex items-center ${
+              isOpen ? "block" : "hidden"
+            } w-full lg:w-auto`}
+          >
             <ul className="flex flex-col lg:flex-row lg:space-x-8 mt-4 lg:mt-0 text-white">
               <li>
-                <Link href="/" className="px-4 py-2 rounded-lg hover:text-green-400 transition">
+                <Link
+                  href="/"
+                  className="px-4 py-2 rounded-lg hover:text-green-400 transition"
+                >
                   Home
                 </Link>
               </li>
@@ -64,12 +80,20 @@ const Header = () => {
           {/* join/Login Button */}
           <div className="flex items-center">
             {session ? (
-              <Link
-                href="/join"
-                className="text-white border border-green-400 hover:bg-green-400 hover:text-black font-medium rounded-lg text-sm px-4 py-2 transition"
-              >
-                Join
-              </Link>
+              <div className="flex gap-x-2">
+                <Link
+                  href="/join"
+                  className="text-white border border-green-400 hover:bg-green-400 hover:text-black font-medium rounded-lg text-sm px-4 py-2 transition"
+                >
+                  Join
+                </Link>
+                <a
+                  className="text-white border border-green-400 hover:bg-green-400 hover:text-black hover:cursor-pointer font-medium rounded-lg text-sm px-4 py-2 transition"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </a>
+              </div>
             ) : (
               <Link
                 href="/login"

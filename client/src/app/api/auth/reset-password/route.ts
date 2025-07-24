@@ -1,7 +1,7 @@
 // src/app/api/auth/reset-password/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
-import connectDB from "../../connectDB";
+import connectDB from "../../../lib/connectDB";
 import User from "../../models/User.model";
 import { ResponseData } from "../../../../../types/route";
 

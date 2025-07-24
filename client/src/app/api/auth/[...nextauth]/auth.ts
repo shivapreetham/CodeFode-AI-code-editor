@@ -3,7 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import User from "../../models/User.model";
-import connectDB from "../../connectDB";
+import connectDB from "../../../lib/connectDB";
 
 
 export const authOptions: NextAuthOptions = {

@@ -24,7 +24,7 @@ import { IDataPayload } from "@/interfaces/IDataPayload";
 import { Notification, NotificationType } from "@/interfaces/Notifications";
 import { v4 as uuid } from "uuid";
 import axios, { AxiosError } from "axios";
-import Loading from "@/app/components/loading/Loading";
+import Loading from "@/app/components/ui/loading/Loading";
 import Chat, { Message } from "@/app/components/chat/Chat";
 import { ChatContext } from "@/context/ChatContext";
 import { useDebounceCallback } from "usehooks-ts";
@@ -33,7 +33,7 @@ import { useAISuggestions } from "@/hooks/useAISuggestion";
 import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
 import ActivityLog from "@/app/components/activityLog/activityLog";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
-import ThemeSwitcher from "@/app/components/theme/ThemeComp";
+import ThemeSwitcher from "@/app/components/ui/theme/ThemeComp";
 import { ThemeContext } from "@/context/ThemeContext";
 import { FontSizeContext } from "@/context/FontSizeContext";
 import { useSession } from "next-auth/react";
@@ -199,7 +199,7 @@ const Page = () => {
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
-  }, [status]);
+  });
 
   const debouncedSaveAndEmit = useDebounceCallback(
     (

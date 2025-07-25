@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "../../connectDB";
+import connectDB from "../../../lib/connectDB";
 import Otp from "../../models/Otp.model";
-import { sendEmail } from "../../sendMail";
+import { sendEmail } from "../../../lib/sendMail";
 
 // Connect to MongoDB
 

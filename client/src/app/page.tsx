@@ -3,9 +3,9 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import "./page.css";
-import Header from "./components/header/Header";
+import Header from "./components/ui/header/Header";
 import Image from "next/image";
-import Footer from "./components/footer/Footer";
+import Footer from "./components/ui/footer/Footer";
 import { motion } from "framer-motion";
 
 export default function Home() {

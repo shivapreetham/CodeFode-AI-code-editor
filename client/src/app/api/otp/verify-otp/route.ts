@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "../../connectDB";
+import connectDB from "../../../lib/connectDB";
 import Otp from "../../models/Otp.model";
 import { hash } from "bcryptjs";
 import UserModel from "../../models/User.model";

@@ -128,11 +128,6 @@ npm run dev
 ## 📄 License
 Distributed under the MIT License. See LICENSE for more information.
 
-## 📞 Contact
-Your Name - 2005shivapreetham@gmail.com
-
-Project Link: (https://github.com/shivapreetham/ai-code-editor)
-
 ## 🙌 Acknowledgements
 - Next.js
 - Monaco Editor

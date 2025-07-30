@@ -4,7 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FiMenu, FiX } from "react-icons/fi"; // Icons for better UX
+import { FiMenu, FiX } from "react-icons/fi"; 
 
 const Header = () => {
   const { data: session } = useSession();

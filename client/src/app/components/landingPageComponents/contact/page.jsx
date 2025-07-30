@@ -1,7 +1,7 @@
-"use client";
+'use client';
 import { useEffect, useState } from "react";
-import Header from "../../components/header/Header";
-import Footer from "../../components/footer/Footer";
+import Header from "@app/components/ui/header/Header";
+import Footer from "@app/components/ui/footer/Footer";
 import "../helper.css";
 import Image from "next/image";
 
@@ -18,13 +18,7 @@ const creators = [
     linkedin: "www.linkedin.com/in/aditya-raj-338a8527a",
     email: "adi.adityakohli2005@gmail.com",
 
-  },
-  {
-    name: "Shivapreetham H.S.",
-    github: "https://github.com/shivapreetham",
-    linkedin: "www.linkedin.com/in/shivapreetham",
-    email: "2023ugcs120@nitjsr.ac.in",
-  },
+  }
 ];
 
 export default function Contact() {

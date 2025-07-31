@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
-import Header from "@app/components/ui/header/Header";
-import Footer from "@app/components/ui/footer/Footer";
+import Header from "@/app/components/ui/header/Header";
+import Footer from "@/app/components/ui/footer/Footer";
 import "../helper.css";
 import Image from "next/image";
 

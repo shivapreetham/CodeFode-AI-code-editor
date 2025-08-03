@@ -1,11 +1,9 @@
-/* .monaco-editor .margin-view-overlays .line-numbers {
-    color: #FFC700!important;
-} */
-
+/* Monaco Editor Customizations */
 .monaco-editor .margin-view-overlays .active-line-number {
     color: #287622!important;
 }
 
+/* Terminal Styling */
 .xterm .xterm-viewport {
     background-color: transparent;
     overflow-y: scroll;
@@ -17,48 +15,94 @@
     bottom: 0;
     scrollbar-color: #1e1e1e;
     scrollbar-width: thin;
-  }
-  
-  .xterm-viewport::-webkit-scrollbar {
+}
+
+.xterm-viewport::-webkit-scrollbar {
     background-color: #1e1e1e!important;
     width: 5px!important;
-  }
-  
-  .xterm-viewport::-webkit-scrollbar-thumb {
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
     background: #1e1e1e!important;
-  }
+}
 
-/* Base remote cursor style: a vertical line */
+/* Remote Cursor Styling */
 .remote-cursor {
-  position: relative; /* Allows absolute positioning of the pseudo-elements */
-  border-left: 3px solid red;
-  margin-left: -1px;
+    position: relative;
+    border-left: 3px solid #ff6b6b;
+    margin-left: -1px;
+    animation: pulse 2s infinite;
 }
 
-/* Create the small red circle above the line */
 .remote-cursor::after {
-  content: "";
-  position: absolute;
-  left: -5px; /* Adjust to center the circle relative to the line */
-  top: -5px;  /* Adjust vertical position as needed */
-  width: 10px;
-  height: 10px;
-  background-color: red;
-  border-radius: 50%;
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: -5px;
+    width: 10px;
+    height: 10px;
+    background-color: #ff6b6b;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
 }
 
-/* On hover, display a tooltip with the username */
 .remote-cursor:hover::before {
-  content: attr(data-username); /* The username should be passed as data-username attribute */
-  position: absolute;
-  top: -30px; /* Position the tooltip above the circle */
-  left: 10px; /* Adjust horizontal offset */
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-  z-index: 10;
-  pointer-events: none; /* Ensures the tooltip doesn't block mouse events */
+    content: attr(data-username);
+    position: absolute;
+    top: -30px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Pulse Animation for Remote Cursors */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5a;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sidebar-icon {
+        padding: 6px;
+        font-size: 1.5rem;
+    }
+    
+    .file-tab {
+        padding: 8px 12px;
+        font-size: 0.875rem;
+    }
 }

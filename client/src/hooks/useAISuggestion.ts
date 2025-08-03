@@ -26,6 +26,7 @@ export interface AIResponse {
   suggestions: Suggestion[];
   bestPractices: Practice[];
   timestamp: string;
+  inlineSuggestions?: string[]; // New field for inline suggestions
 }
 
 interface UseAISuggestionsProps {

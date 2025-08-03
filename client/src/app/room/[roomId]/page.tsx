@@ -11,6 +11,7 @@ import SidebarPanel from "@/app/components/room/SidebarPanel";
 import FileTabs from "@/app/components/room/FileTabs";
 import CodeEditor from "@/app/components/room/CodeEditor";
 import CodeOutput from "@/app/components/room/CodeOutput";
+import CodeVisualization from "@/app/components/room/CodeVisualization";
 
 // Hooks
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -51,6 +52,12 @@ const RoomContent = () => {
   const remoteCursorDecorations = useRef<{ [key: string]: string[] }>({});
   const aiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isDebouncing, setIsDebouncing] = useState(false);
+  
+  // New feature states
+  const [showNotes, setShowNotes] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [showVisualization, setShowVisualization] = useState(false);
+  const [aiInlineSuggestions, setAiInlineSuggestions] = useState<string[]>([]);
 
   // Room state management using centralized context
   const {
@@ -246,6 +253,63 @@ const RoomContent = () => {
     }
   }, [activeFile?.path]);
 
+  // Handle AI response and generate inline suggestions
+  useEffect(() => {
+    if (aiResponse) {
+      console.log('🎯 Processing AI response for inline suggestions');
+      
+      const suggestions: string[] = [];
+      
+      // Extract suggestions from AI response
+      if (aiResponse.suggestions && aiResponse.suggestions.length > 0) {
+        aiResponse.suggestions.forEach(suggestion => {
+          if (suggestion.code) {
+            suggestions.push(suggestion.code);
+          }
+        });
+      }
+      
+      // Extract best practices
+      if (aiResponse.bestPractices && aiResponse.bestPractices.length > 0) {
+        aiResponse.bestPractices.forEach(practice => {
+          if (practice.code) {
+            suggestions.push(practice.code);
+          }
+        });
+      }
+      
+      setAiInlineSuggestions(suggestions);
+      console.log('✅ Generated inline suggestions:', suggestions.length);
+    }
+  }, [aiResponse]);
+
+  // Add demo note when notes panel is first opened
+  useEffect(() => {
+    if (showNotes && !notes) {
+      setNotes(`# Code Notes for ${activeFile?.name || 'Current File'}
+
+## 📝 How to use inline notes:
+- Add // NOTE: your note here to any line
+- Add /* NOTE: your note here */ for multi-line notes
+- Hover over lines with notes to see them
+
+## 🚀 AI Features:
+- AI suggestions appear as ghost text
+- Click the sparkles button to toggle AI suggestions
+- Use the "Analyze Now" button for instant AI analysis
+
+## 📊 Visualization:
+- Click the eye button to see code structure
+- View file dependencies and function hierarchies
+- Analyze import/export relationships
+
+## 💡 Tips:
+- Use the notes panel for detailed documentation
+- Combine AI suggestions with your own notes
+- Visualize your code to understand structure better`);
+    }
+  }, [showNotes, notes, activeFile?.name]);
+
   // Handle AI suggestions when AI tab is active
   useEffect(() => {
     console.log('🧠 AI useEffect:', {
@@ -309,6 +373,26 @@ const RoomContent = () => {
       });
     }
   }, [activeFile?.content, activeFile?.language, fetchSuggestions]);
+
+  // Handle notes toggle
+  const handleToggleNotes = useCallback(() => {
+    setShowNotes(!showNotes);
+  }, [showNotes]);
+
+  // Handle notes change
+  const handleNotesChange = useCallback((newNotes: string) => {
+    setNotes(newNotes);
+  }, []);
+
+  // Handle code visualization
+  const handleVisualizeCode = useCallback(() => {
+    setShowVisualization(true);
+  }, []);
+
+  // Handle close visualization
+  const handleCloseVisualization = useCallback(() => {
+    setShowVisualization(false);
+  }, []);
 
   // Loading state - handled by RoomContext
   if (!isInitialized) {
@@ -393,6 +477,12 @@ const RoomContent = () => {
           filesContentMap={filesContentMap}
           onEditorChange={handleEditorChange}
           onEditorDidMount={handleEditorDidMount}
+          aiSuggestions={aiInlineSuggestions}
+          onVisualizeCode={handleVisualizeCode}
+          onToggleNotes={handleToggleNotes}
+          showNotes={showNotes}
+          notes={notes}
+          onNotesChange={handleNotesChange}
         />
 
         {/* Code Output */}
@@ -405,8 +495,17 @@ const RoomContent = () => {
           onRunCode={handleRunCode}
         />
       </div>
-              </div>
-            );
+
+      {/* Code Visualization Modal */}
+      <CodeVisualization
+        isOpen={showVisualization}
+        onClose={handleCloseVisualization}
+        files={files}
+        fileExplorerData={fileExplorerData}
+        filesContentMap={filesContentMap}
+      />
+    </div>
+  );
 };
 
 const Page = () => {

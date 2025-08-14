@@ -55,7 +55,7 @@ const RoomContent = () => {
   
   // New feature states
   const [showNotes, setShowNotes] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState<Map<string, string>>(new Map());
   const [showVisualization, setShowVisualization] = useState(false);
   const [aiInlineSuggestions, setAiInlineSuggestions] = useState<string[]>([]);
 
@@ -285,8 +285,8 @@ const RoomContent = () => {
 
   // Add demo note when notes panel is first opened
   useEffect(() => {
-    if (showNotes && !notes) {
-      setNotes(`# Code Notes for ${activeFile?.name || 'Current File'}
+    if (showNotes && !notes.has(activeFile?.path || '')) {
+      setNotes(prev => new Map(prev).set(activeFile?.path || '', `# Code Notes for ${activeFile?.name || 'Current File'}
 
 ## 📝 How to use inline notes:
 - Add // NOTE: your note here to any line
@@ -306,23 +306,26 @@ const RoomContent = () => {
 ## 💡 Tips:
 - Use the notes panel for detailed documentation
 - Combine AI suggestions with your own notes
-- Visualize your code to understand structure better`);
+- Visualize your code to understand structure better`));
     }
-  }, [showNotes, notes, activeFile?.name]);
+  }, [showNotes, notes, activeFile?.name, activeFile?.path]);
 
   // Handle AI suggestions when AI tab is active
   useEffect(() => {
-    console.log('🧠 AI useEffect:', {
-      activeTab,
-      hasContent: !!activeFile?.content,
-      hasLang: !!activeFile?.language,
-      contentLength: activeFile?.content?.length,
-      language: activeFile?.language,
-      isInitialized
+    const currentContent = filesContentMap.get(activeFile?.path)?.content || activeFile?.content;
+    const currentLanguage = activeFile?.language;
+    
+    console.log('🧠 AI useEffect:', { 
+      activeTab, 
+      hasContent: !!currentContent, 
+      hasLang: !!currentLanguage, 
+      contentLength: currentContent?.length || 0, 
+      language: currentLanguage,
+      activeFile: activeFile?.name
     });
 
-    if (activeTab === 4 && activeFile?.content && activeFile?.language) {
-      console.log('✅ AI conditions met - starting debounce');
+    if (activeTab === 4 && currentContent && currentLanguage) {
+      console.log('✅ AI conditions met - triggering analysis');
       
       // Clear any pending AI timeout
       if (aiTimeoutRef.current) {
@@ -335,15 +338,14 @@ const RoomContent = () => {
 
       // Set a new timeout to trigger AI after a delay
       aiTimeoutRef.current = setTimeout(() => {
-        console.log('⏰ Debounce timeout fired - calling fetchSuggestions');
         setIsDebouncing(false);
-        fetchSuggestions(activeFile.content, activeFile.language);
+        fetchSuggestions(currentContent, currentLanguage);
       }, 1000); // 1 second debounce
     } else {
-      console.log('❌ AI conditions not met:', {
-        activeTabIs4: activeTab === 4,
-        hasContent: !!activeFile?.content,
-        hasLanguage: !!activeFile?.language
+      console.log('❌ AI conditions not met:', { 
+        activeTabIs4: activeTab === 4, 
+        hasContent: !!currentContent, 
+        hasLanguage: !!currentLanguage 
       });
       
       // Clear timeout if conditions are not met
@@ -353,26 +355,29 @@ const RoomContent = () => {
       }
       setIsDebouncing(false);
     }
-  }, [activeTab, activeFile?.content, activeFile?.language, fetchSuggestions]);
+  }, [activeTab, activeFile?.path, filesContentMap, fetchSuggestions]);
 
   // Manual AI trigger function
   const handleManualAITrigger = useCallback(() => {
     console.log('🔥 Manual AI trigger clicked');
-    if (activeFile?.content && activeFile?.language) {
+    const currentContent = filesContentMap.get(activeFile?.path)?.content || activeFile?.content;
+    const currentLanguage = activeFile?.language;
+    
+    if (currentContent && currentLanguage) {
       console.log('✅ Manual trigger conditions met - calling fetchSuggestions directly');
       // Clear any pending AI timeout
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
         aiTimeoutRef.current = null;
       }
-      fetchSuggestions(activeFile.content, activeFile.language);
+      fetchSuggestions(currentContent, currentLanguage);
     } else {
       console.log('❌ Manual trigger conditions not met:', {
-        hasContent: !!activeFile?.content,
-        hasLanguage: !!activeFile?.language
+        hasContent: !!currentContent,
+        hasLanguage: !!currentLanguage
       });
     }
-  }, [activeFile?.content, activeFile?.language, fetchSuggestions]);
+  }, [activeFile?.path, filesContentMap, fetchSuggestions]);
 
   // Handle notes toggle
   const handleToggleNotes = useCallback(() => {
@@ -381,8 +386,8 @@ const RoomContent = () => {
 
   // Handle notes change
   const handleNotesChange = useCallback((newNotes: string) => {
-    setNotes(newNotes);
-  }, []);
+    setNotes(prev => new Map(prev).set(activeFile?.path || '', newNotes));
+  }, [activeFile?.path]);
 
   // Handle code visualization
   const handleVisualizeCode = useCallback(() => {
@@ -481,7 +486,7 @@ const RoomContent = () => {
           onVisualizeCode={handleVisualizeCode}
           onToggleNotes={handleToggleNotes}
           showNotes={showNotes}
-          notes={notes}
+          notes={notes.get(activeFile?.path || '') || ''}
           onNotesChange={handleNotesChange}
         />
 

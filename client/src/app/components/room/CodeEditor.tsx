@@ -46,6 +46,29 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    
+    // Add hover provider for inline notes
+    monaco.languages.registerHoverProvider('javascript', {
+      provideHover: (model: any, position: any) => {
+        const lineNumber = position.lineNumber;
+        const lineContent = model.getLineContent(lineNumber);
+        
+        // Check for note markers like // NOTE: or /* NOTE: */
+        const noteMatch = lineContent.match(/(?:\/\/|\/\*)\s*NOTE:\s*(.+?)(?:\*\/)?$/);
+        
+        if (noteMatch) {
+          return {
+            contents: [
+              { value: '**📝 Code Note:**' },
+              { value: noteMatch[1] }
+            ]
+          };
+        }
+
+        return null;
+      }
+    });
+
     onEditorDidMount(editor, monaco);
   };
 
@@ -172,18 +195,36 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
         {/* Notes Panel */}
         {showNotes && (
-          <div className="w-1/3 border-l border-gray-700 bg-gray-900">
-            <div className="p-4">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <div className="w-1/3 border-l border-gray-700 bg-gray-900 flex flex-col">
+            <div className="p-4 border-b border-gray-700">
+              <h3 className="text-lg font-semibold text-white flex items-center">
                 <FileText className="w-5 h-5 mr-2" />
                 Code Notes
               </h3>
+              <p className="text-sm text-gray-400 mt-1">
+                {activeFile.name} - {activeFile.language}
+              </p>
+            </div>
+            <div className="flex-1 p-4">
               <textarea
                 value={notes}
                 onChange={(e) => onNotesChange?.(e.target.value)}
-                placeholder="Add notes about your code here..."
-                className="w-full h-full min-h-[400px] p-3 bg-gray-800 text-white border border-gray-600 rounded resize-none focus:outline-none focus:border-blue-500"
+                placeholder="Add notes about your code here...
+
+💡 Tips:
+• Use markdown formatting
+• Add // NOTE: in your code for inline notes
+• Document functions and classes
+• Track bugs and improvements"
+                className="w-full h-full min-h-[400px] p-3 bg-gray-800 text-white border border-gray-600 rounded resize-none focus:outline-none focus:border-blue-500 font-mono text-sm"
+                style={{ fontFamily: 'monospace' }}
               />
+            </div>
+            <div className="p-4 border-t border-gray-700">
+              <div className="text-xs text-gray-500">
+                <p>💡 Use // NOTE: in your code for inline notes</p>
+                <p>📝 Notes are saved per file automatically</p>
+              </div>
             </div>
           </div>
         )}

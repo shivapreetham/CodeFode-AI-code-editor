@@ -119,8 +119,6 @@ export const validateEnvironment = () => {
     process.exit(1);
   }
   
-  console.log('✅ Environment configuration validated successfully');
-  console.log(`🚀 Starting server in ${config.server.nodeEnv} mode on port ${config.server.port}`);
 };
 
 export default config;

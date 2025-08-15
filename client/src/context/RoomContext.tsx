@@ -99,7 +99,6 @@ interface RoomProviderProps {
 }
 
 export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, username }) => {
-  console.log('🔍 DEBUG: RoomProvider initialized with:', { roomId, username });
   
   // Validate props immediately with enhanced validation
   if (!roomId || 
@@ -112,10 +111,10 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
       username.trim() === '' ||
       username.length < 2 ||
       username.length > 50 ||
-      !/^[A-Za-z0-9_-\s]+$/.test(username)) {
+      !/^[A-Za-z0-9_@.-\s]+$/.test(username)) {
     console.error('❌ ERROR: Invalid room parameters in RoomProvider', {
       roomId: { value: roomId, valid: roomId && roomId !== 'undefined' && /^[A-Za-z0-9_-]+$/.test(roomId) },
-      username: { value: username, valid: username && /^[A-Za-z0-9_-\s]+$/.test(username) }
+      username: { value: username, valid: username && /^[A-Za-z0-9_@.-\s]+$/.test(username) }
     });
     throw new Error(`Invalid room parameters: roomId=${roomId}, username=${username}`);
   }
@@ -146,8 +145,6 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
   // Socket initialization - separate from workspace loading
   useEffect(() => {
     const initSocketConnection = async () => {
-      console.log('🔍 DEBUG: Starting socket initialization...');
-      console.log('🔍 DEBUG: roomId:', roomId, 'username:', username);
       
       try {
         // Initialize socket
@@ -255,6 +252,14 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         setLoading(true);
         
         const workspace = await workspaceApi.getWorkspace(roomId);
+        // Debug workspace loading
+        if (!workspace) {
+          console.log('⚠️ No workspace data received');
+        } else if (!workspace.filesContentMap) {
+          console.log('⚠️ Workspace missing filesContentMap');
+        } else {
+          console.log('✅ Workspace has filesContentMap with', workspace.filesContentMap.size, 'files');
+        }
 
         if (workspace && workspace.filesContentMap) {
           console.log('✅ Existing workspace loaded');
@@ -314,10 +319,15 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         setWorkspaceLoaded(true);
         console.log('✅ Workspace loading completed');
       } catch (error: any) {
-        console.error("❌ Error loading workspace:", error);
+        console.error("❌ Error loading workspace:", {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          stack: error.stack
+        });
         
         // Set defaults on error with enhanced error handling
-        console.log('📝 Setting default workspace due to error');
+        console.log('📝 Setting default workspace due to error:', error.message);
         
         try {
           setFileExplorerData(DEFAULT_EXPLORER);
@@ -347,7 +357,14 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
     };
 
     loadWorkspace();
-  }, [isInitialized, workspaceLoaded, roomId]);
+  }, [isInitialized, roomId]); // Removed workspaceLoaded from deps to allow reloading
+
+  // Reset workspaceLoaded when roomId changes
+  useEffect(() => {
+    if (roomId) {
+      setWorkspaceLoaded(false);
+    }
+  }, [roomId]);
 
   const toggleSidebar = useCallback(() => {
     setIsCollapsed(!isCollapsed);

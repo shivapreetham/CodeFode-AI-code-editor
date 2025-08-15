@@ -37,8 +37,6 @@ const buildApiUrl = (endpoint: string): string => {
 export const workspaceApi = {
   saveWorkspace: async (roomId: string | undefined, payload: IDataPayload, filesContentMap: Map<string, IFile>) => {
     try {
-      console.log('🔍 DEBUG: saveWorkspace called with roomId:', roomId);
-      console.log('🔍 DEBUG: BASE_URL:', BASE_URL);
       
       // Aggressive validation
       const validatedRoomId = validateRoomId(roomId);
@@ -59,8 +57,6 @@ export const workspaceApi = {
 
       // Fix: Use absolute URL construction
       const url = buildApiUrl('/api/workspace');
-      console.log('🚀 Sending workspace save request to:', url);
-      console.log('📦 Payload size:', JSON.stringify(workspaceData).length, 'bytes');
       
       const response = await fetch(url, {
         method: 'POST',
@@ -70,7 +66,6 @@ export const workspaceApi = {
         body: JSON.stringify(workspaceData),
       });
 
-      console.log('📡 Save response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
@@ -79,7 +74,6 @@ export const workspaceApi = {
       }
 
       const responseData = await response.json();
-      console.log('✅ Workspace save successful');
       return responseData;
     } catch (error) {
       console.error('❌ Workspace save error:', error);
@@ -89,7 +83,6 @@ export const workspaceApi = {
 
   getWorkspace: async (roomId: string | undefined) => {
     try {
-      console.log('🔍 DEBUG: getWorkspace called with roomId:', roomId);
       console.log('🔍 DEBUG: BASE_URL:', BASE_URL);
       
       // Aggressive validation
@@ -97,14 +90,16 @@ export const workspaceApi = {
       
       // Fix: Use absolute URL construction
       const url = buildApiUrl(`/api/workspace/${validatedRoomId}`);
-      console.log('🚀 Fetching workspace from:', url);
       
-      const response = await fetch(url);
-      console.log('📡 Fetch response status:', response.status);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate, br'
+        }
+      });
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('📝 No existing workspace found, will create new one');
           return null; // Return null for new workspaces
         }
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
@@ -113,21 +108,21 @@ export const workspaceApi = {
       }
 
       const responseData = await response.json();
-      console.log('✅ Workspace fetch successful');
-      console.log('📦 Received data keys:', Object.keys(responseData));
-
+      // Handle wrapped response from server
+      const actualData = responseData.data || responseData;
+      
       // Convert array back to Map before returning
-      if (responseData && responseData.filesContent) {
+      if (actualData && actualData.filesContent) {
         const filesContentMap = new Map(
-          responseData.filesContent.map((item: FileContentItem) => [item.path, item.file])
+          actualData.filesContent.map((item: FileContentItem) => [item.path, item.file])
         );
         return {
-          ...responseData,
+          ...actualData,
           filesContentMap 
         };
       }
 
-      return responseData;
+      return actualData;
     } catch (error) {
       console.error('❌ Workspace fetch error:', error);
       throw error;

@@ -68,7 +68,10 @@ export const useCursorManagement = ({
       const payload = {
         roomId,
         username,
-        position: e.position,
+        position: {
+          line: e.position.lineNumber,
+          ch: e.position.column
+        },
         filePath: currentFilePath,
       };
       

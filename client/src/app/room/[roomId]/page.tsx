@@ -98,13 +98,14 @@ const RoomContent = () => {
     username
   } = useRoom();
 
-  console.log('🔍 DEBUG: RoomContent rendered with:', { 
-    roomId, 
-    username, 
-    isInitialized, 
-    activeFileExists: !!activeFile?.path,
-    activeTab
-  });
+  // Essential debug info only when needed
+  if (activeTab === 4) {
+    console.log('🧠 AI Tab Active:', { 
+      hasFile: !!activeFile?.path,
+      language: activeFile?.language,
+      contentLength: (filesContentMap.get(activeFile?.path)?.content || activeFile?.content)?.length
+    });
+  }
 
   // Cursor management functions
   const updateRemoteCursor = useCallback((
@@ -162,7 +163,10 @@ const RoomContent = () => {
       const payload = {
         roomId,
         username,
-        position: e.position,
+        position: {
+          line: e.position.lineNumber,
+          ch: e.position.column
+        },
         filePath: currentFilePath,
       };
 
@@ -258,30 +262,20 @@ const RoomContent = () => {
   // Handle AI response and generate inline suggestions
   useEffect(() => {
     if (aiResponse) {
-      console.log('🎯 Processing AI response for inline suggestions');
-      
       const suggestions: string[] = [];
       
-      // Extract suggestions from AI response
-      if (aiResponse.suggestions && aiResponse.suggestions.length > 0) {
-        aiResponse.suggestions.forEach(suggestion => {
-          if (suggestion.code) {
-            suggestions.push(suggestion.code);
-          }
-        });
-      }
+      // Extract suggestions and best practices
+      aiResponse.suggestions?.forEach(suggestion => {
+        if (suggestion?.code) suggestions.push(suggestion.code);
+      });
       
-      // Extract best practices
-      if (aiResponse.bestPractices && aiResponse.bestPractices.length > 0) {
-        aiResponse.bestPractices.forEach(practice => {
-          if (practice.code) {
-            suggestions.push(practice.code);
-          }
-        });
-      }
+      aiResponse.bestPractices?.forEach(practice => {
+        if (practice?.code) suggestions.push(practice.code);
+      });
       
       setAiInlineSuggestions(suggestions);
-      console.log('✅ Generated inline suggestions:', suggestions.length);
+    } else {
+      setAiInlineSuggestions([]);
     }
   }, [aiResponse]);
 
@@ -316,41 +310,22 @@ const RoomContent = () => {
   useEffect(() => {
     const currentContent = filesContentMap.get(activeFile?.path)?.content || activeFile?.content;
     const currentLanguage = activeFile?.language;
-    const fileName = activeFile?.name;
-    
-    console.log('🧠 AI useEffect:', { 
-      activeTab, 
-      hasContent: !!currentContent, 
-      hasLang: !!currentLanguage, 
-      contentLength: currentContent?.length || 0, 
-      language: currentLanguage,
-      activeFile: fileName
-    });
 
     if (activeTab === 4 && currentContent && currentLanguage) {
-      console.log('✅ AI conditions met - triggering analysis');
-      
       // Clear any pending AI timeout
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
         aiTimeoutRef.current = null;
       }
 
-      // Set debouncing state
       setIsDebouncing(true);
 
       // Set a new timeout to trigger AI after a delay
       aiTimeoutRef.current = setTimeout(() => {
         setIsDebouncing(false);
         fetchSuggestions(currentContent, currentLanguage);
-      }, 1000); // 1 second debounce
+      }, 1000);
     } else {
-      console.log('❌ AI conditions not met:', { 
-        activeTabIs4: activeTab === 4, 
-        hasContent: !!currentContent, 
-        hasLanguage: !!currentLanguage 
-      });
-      
       // Clear timeout if conditions are not met
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
@@ -362,23 +337,16 @@ const RoomContent = () => {
 
   // Manual AI trigger function
   const handleManualAITrigger = useCallback(() => {
-    console.log('🔥 Manual AI trigger clicked');
     const currentContent = filesContentMap.get(activeFile?.path)?.content || activeFile?.content;
     const currentLanguage = activeFile?.language;
     
     if (currentContent && currentLanguage) {
-      console.log('✅ Manual trigger conditions met - calling fetchSuggestions directly');
       // Clear any pending AI timeout
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
         aiTimeoutRef.current = null;
       }
       fetchSuggestions(currentContent, currentLanguage);
-    } else {
-      console.log('❌ Manual trigger conditions not met:', {
-        hasContent: !!currentContent,
-        hasLanguage: !!currentLanguage
-      });
     }
   }, [activeFile?.path, activeFile?.content, activeFile?.language, filesContentMap, fetchSuggestions]);
 
@@ -557,17 +525,12 @@ const Page = () => {
   
   // Enhanced parameter extraction with validation
   const { roomId, username } = useMemo(() => {
-    console.log('🔍 DEBUG: Extracting route parameters...');
-    console.log('🔍 DEBUG: Raw params:', params);
-    console.log('🔍 DEBUG: Raw query params:', Array.from(query.entries()));
-    
     let extractedRoomId: string | null = null;
     let extractedUsername: string | null = null;
 
     // Extract roomId with comprehensive validation
     if (params?.roomId) {
       const rawRoomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
-      console.log('🔍 DEBUG: Raw roomId from params:', rawRoomId);
       
       // Enhanced validation - ensure roomId is not "undefined" string and meets format requirements
       if (rawRoomId && 
@@ -577,7 +540,6 @@ const Page = () => {
           rawRoomId.length <= 100 && 
           /^[A-Za-z0-9_-]+$/.test(rawRoomId.trim())) {
         extractedRoomId = rawRoomId.trim();
-        console.log('✅ Valid roomId extracted:', extractedRoomId);
       } else {
         console.error('❌ Invalid roomId format:', rawRoomId);
         console.error('❌ roomId must be non-empty and match pattern: /^[A-Za-z0-9_-]+$/');
@@ -588,23 +550,20 @@ const Page = () => {
 
     // Extract username with validation
     const rawUsername = query.get("username");
-    console.log('🔍 DEBUG: Raw username from query:', rawUsername);
     
     if (rawUsername && 
         rawUsername.trim() !== '' && 
         rawUsername.length >= 2 && 
         rawUsername.length <= 50 && 
-        /^[A-Za-z0-9_-\s]+$/.test(rawUsername.trim())) {
+        /^[A-Za-z0-9_@.-\s]+$/.test(rawUsername.trim())) {
       extractedUsername = rawUsername.trim();
-      console.log('✅ Valid username extracted:', extractedUsername);
     } else {
       console.error('❌ Invalid username:', rawUsername, {
         length: rawUsername?.length,
-        pattern: rawUsername ? /^[A-Za-z0-9_-\s]+$/.test(rawUsername.trim()) : false
+        pattern: rawUsername ? /^[A-Za-z0-9_@.-\s]+$/.test(rawUsername.trim()) : false
       });
     }
 
-    console.log('🔍 DEBUG: Final extracted values:', { extractedRoomId, extractedUsername });
 
     return {
       roomId: extractedRoomId,
@@ -733,7 +692,6 @@ const Page = () => {
     );
   }
 
-  console.log('✅ Page rendering with valid parameters:', { roomId, username });
 
   return (
     <RoomProvider roomId={roomId} username={username}>

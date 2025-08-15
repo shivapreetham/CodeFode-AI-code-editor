@@ -26,7 +26,11 @@ interface AIResponse {
   errors: Error[];
   suggestions: Suggestion[];
   bestPractices: Practice[];
-  timestamp: string;
+  metadata?: {
+    language: string;
+    codeLength: number;
+    processedAt: string;
+  };
 }
 
 interface AISuggestionsSidebarProps {
@@ -61,6 +65,14 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
   onManualTrigger,
   isDebouncing
 }) => {
+  if (aiResponse) {
+    console.log('🎆 AI Results:', {
+      errors: aiResponse.errors?.length || 0,
+      suggestions: aiResponse.suggestions?.length || 0,
+      practices: aiResponse.bestPractices?.length || 0
+    });
+  }
+  
   const [expandedSections, setExpandedSections] = useState<ExpandedSections>({
     errors: true,
     suggestions: true,
@@ -148,7 +160,7 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
           </div>
         ) : aiResponse ? (
           <div className="space-y-6">
-            {aiResponse.errors.length > 0 && (
+            {aiResponse.errors && aiResponse.errors.length > 0 && (
               <Section
                 title={`Issues Found (${aiResponse.errors.length})`}
                 icon={Bug}
@@ -174,7 +186,7 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
               </Section>
             )}
 
-            {aiResponse.suggestions.length > 0 && (
+            {aiResponse.suggestions && aiResponse.suggestions.length > 0 && (
               <Section
                 title={`Suggestions (${aiResponse.suggestions.length})`}
                 icon={Lightbulb}
@@ -192,7 +204,7 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
               </Section>
             )}
 
-            {aiResponse.bestPractices.length > 0 && (
+            {aiResponse.bestPractices && aiResponse.bestPractices.length > 0 && (
               <Section
                 title={`Best Practices (${aiResponse.bestPractices.length})`}
                 icon={CheckCircle}
@@ -208,6 +220,17 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
                   </div>
                 ))}
               </Section>
+            )}
+            
+            {/* Show a message if no valid data was found */}
+            {(!aiResponse.errors || aiResponse.errors.length === 0) &&
+             (!aiResponse.suggestions || aiResponse.suggestions.length === 0) &&
+             (!aiResponse.bestPractices || aiResponse.bestPractices.length === 0) && (
+              <div className="flex flex-col items-center justify-center p-8 space-y-3 text-yellow-400">
+                <Bug className="w-8 h-8" />
+                <p className="text-center">Analysis completed but no actionable insights found.</p>
+                <p className="text-sm text-zinc-400 text-center">Try analyzing a different file or adding more code.</p>
+              </div>
             )}
           </div>
         ) : (

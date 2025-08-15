@@ -63,7 +63,6 @@ export const addNotification = async (
   notification: Omit<Notification, '_id' | 'timestamp'>
 ): Promise<Notification> => {
   try {
-    console.log("calling add notification");
     const response = await axios.post<{ notification: Notification }>(
       `${baseUrl}/api/notifications/${roomId}`,
       notification

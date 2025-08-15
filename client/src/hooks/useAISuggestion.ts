@@ -25,8 +25,11 @@ export interface AIResponse {
   errors: Error[];
   suggestions: Suggestion[];
   bestPractices: Practice[];
-  timestamp: string;
-  inlineSuggestions?: string[]; // New field for inline suggestions
+  metadata?: {
+    language: string;
+    codeLength: number;
+    processedAt: string;
+  };
 }
 
 interface UseAISuggestionsProps {
@@ -49,28 +52,18 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSuggestions = useCallback(async (code: string, language: string) => {
-    console.log('🔥 fetchSuggestions called with:', { 
-      codeLength: code?.length, 
-      language, 
-      enabled,
-      codePreview: code?.substring(0, 50) + '...'
-    });
+    if (!enabled || !code.trim()) return;
     
-    if (!enabled || !code.trim()) {
-      console.log('❌ fetchSuggestions early return:', { enabled, codeTrimmed: code?.trim().length });
-      return;
-    }
-    
+    let response;
     try {
-      console.log('🚀 Starting AI code analysis...');
-      
       setIsLoading(true);
       setError(null);
 
       const url = buildApiUrl('/api/ai/code');
-      console.log('📡 AI API URL:', url);
-
-      const response = await axios.post<AIResponse>(
+      // Log AI request for debugging
+      console.info('[AI] Starting code analysis', { language, codeLength: code.length, timestamp: new Date().toISOString() });
+      
+      response = await axios.post<AIResponse>(
         url, 
         { code, language },
         {
@@ -78,11 +71,49 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
           timeout: 30000
         }
       );
-
-      console.log('✅ AI analysis completed');
-      setAIResponse(response.data);
+      
+      // Log server response for debugging
+      console.info('[AI] Server response received', { 
+        status: response.status,
+        hasData: !!response.data,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Handle wrapped response format from backend
+      let aiData = response.data;
+      if (response.data.success && response.data.data) {
+        aiData = response.data.data;
+      }
+      
+      // Simple validation with fallbacks
+      const validatedResponse: AIResponse = {
+        errors: Array.isArray(aiData.errors) ? aiData.errors : [],
+        suggestions: Array.isArray(aiData.suggestions) ? aiData.suggestions : [],
+        bestPractices: Array.isArray(aiData.bestPractices) ? aiData.bestPractices : [],
+        metadata: aiData.metadata
+      };
+      
+      // Log AI analysis results
+      console.info('[AI] Analysis completed successfully', {
+        errors: validatedResponse.errors.length,
+        suggestions: validatedResponse.suggestions.length,
+        bestPractices: validatedResponse.bestPractices.length,
+        language,
+        codeLength: code.length,
+        timestamp: new Date().toISOString()
+      });
+      
+      setAIResponse(validatedResponse);
     } catch (err) {
-      console.error('❌ AI analysis error:', err);
+      // Log AI error for debugging
+      console.error('[AI] Analysis failed', {
+        error: err.message || 'Unknown error',
+        code: err.code,
+        status: err.response?.status,
+        language,
+        codeLength: code.length,
+        timestamp: new Date().toISOString()
+      });
       
       let errorMessage = 'Failed to analyze code';
       

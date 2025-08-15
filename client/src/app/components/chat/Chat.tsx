@@ -43,11 +43,9 @@ const Chat: React.FC<ChatProps> = ({ socket, username, roomId }) => {
 
   const sendMessage = () => {
     if (message.trim() === "") return;
-    console.log("username", username,"messages", messages);
     const newMessage: Message = { sender: username, text: message, timestamp: new Date().toISOString() };
-    console.log("newMessage", newMessage);
     // Emit message event to the room
-    socket.emit(ACTIONS.SEND_MESSAGE, { roomId,message: newMessage.text, username: newMessage.sender, timestamp: newMessage.timestamp });
+    socket.emit(ACTIONS.SEND_MESSAGE, { roomId, message: newMessage.text, username: newMessage.sender, timestamp: Date.now() });
     // Add message to chat (optimistic UI)
     // setMessages((prev) => [...prev, newMessage]);
     setMessage("");

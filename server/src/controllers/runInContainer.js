@@ -169,7 +169,6 @@ async function executeCode(language, code) {
         throw new Error("Unsupported language");
     }
   } catch (error) {
-    console.log(error);
     return {
       success: false,
       output: error.message,

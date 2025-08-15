@@ -2,7 +2,6 @@ import { io, Socket } from "socket.io-client";
 
 export const initSocket = (): Socket => {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-  console.log("Attempting to connect to backend:", backendUrl);
 
   const options = {
     'force new connection': true,
@@ -16,7 +15,6 @@ export const initSocket = (): Socket => {
     const socket = io(backendUrl, options);
 
     socket.on("connect", () => {
-      console.log("Socket connected successfully with ID:", socket.id);
     });
 
     socket.on("connect_error", (error) => {

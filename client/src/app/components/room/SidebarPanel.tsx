@@ -63,8 +63,6 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
   onManualAITrigger,
   isDebouncing
 }) => {
-  console.log('🏷 SidebarPanel render:', { activeTab, isCollapsed });
-  
   if (isCollapsed) return null;
 
   return (

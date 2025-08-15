@@ -9,7 +9,7 @@
     "dev": "nodemon src/index.js"
   },
   "keywords": [],
-  "author": "SAPHIRE",
+  "author": "Shivapreetham",
   "license": "ISC",
   "dependencies": {
     "@ai-sdk/cohere": "^1.1.6",

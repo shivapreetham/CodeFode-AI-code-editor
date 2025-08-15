@@ -1,110 +1,171 @@
-# CodeFode Documentation
+# 📚 CodeFode Documentation
 
-Welcome to the comprehensive documentation for CodeFode - an AI-powered collaborative code editor.
-
-## 📚 Documentation Structure
-
-### 🏗️ Architecture
-- [System Architecture](./architecture/system-overview.md) - High-level system design and component interactions
-- [Database Schema](./architecture/database-schema.md) - MongoDB collections and data models
-- [Real-time Communication](./architecture/realtime-communication.md) - Socket.IO implementation details
-
-### 💻 Client-Side Documentation
-- [Frontend Overview](./client/overview.md) - Next.js application structure and key features
-- [Components Guide](./client/components.md) - Detailed component documentation
-- [State Management](./client/state-management.md) - Context providers and hooks
-- [Authentication](./client/authentication.md) - NextAuth.js implementation
-- [Real-time Features](./client/realtime-features.md) - Socket.IO client implementation
-
-### 🔧 Server-Side Documentation
-- [Backend Overview](./server/overview.md) - Express.js server architecture
-- [API Routes](./server/api-routes.md) - REST API endpoints documentation
-- [Controllers](./server/controllers.md) - Business logic implementation
-- [Socket Events](./server/socket-events.md) - Real-time event handling
-- [Database Models](./server/database-models.md) - MongoDB schema definitions
-
-### 🔌 API Reference
-- [Authentication API](./api/authentication.md) - Login, register, password reset endpoints
-- [Workspace API](./api/workspace.md) - File and project management endpoints
-- [AI Integration API](./api/ai-integration.md) - Cohere AI service integration
-- [Notifications API](./api/notifications.md) - Notification system endpoints
-- [Socket Events Reference](./api/socket-events.md) - Real-time communication events
-
-### 🚀 Deployment
-- [Setup Guide](./deployment/setup-guide.md) - Development environment setup
-- [Production Deployment](./deployment/production.md) - Production deployment instructions
-- [Environment Variables](./deployment/environment-variables.md) - Configuration reference
-- [Docker Setup](./deployment/docker.md) - Containerization guide
-
-### 🤝 Contributing
-- [Development Workflow](./contributing/development-workflow.md) - Git workflow and coding standards
-- [Code Style Guide](./contributing/code-style.md) - Coding conventions and best practices
-- [Testing Guidelines](./contributing/testing.md) - Testing strategy and requirements
-- [Pull Request Template](./contributing/pull-request-template.md) - PR submission guidelines
+Welcome to CodeFode - a real-time collaborative AI-powered code editor!
 
 ## 🚀 Quick Start
 
-1. **Setup Development Environment**
-   ```bash
-   # Clone the repository
-   git clone <repository-url>
-   cd CodeFode-AI-code-editor
-   
-   # Install dependencies
-   cd client && npm install
-   cd ../server && npm install
-   ```
+### 1. Setup
+```bash
+# Clone and install dependencies
+git clone <repo-url>
+cd CodeFode-AI-code-editor
 
-2. **Environment Configuration**
-   - Copy environment files from deployment documentation
-   - Configure MongoDB connection
-   - Set up AI service credentials
+# Install client dependencies
+cd client && npm install
 
-3. **Start Development Servers**
-   ```bash
-   # Terminal 1 - Backend
-   cd server && npm run dev
-   
-   # Terminal 2 - Frontend
-   cd client && npm run dev
-   ```
+# Install server dependencies  
+cd ../server && npm install
+```
 
-4. **Access the Application**
-   - Frontend: http://localhost:3000
-   - Backend: http://localhost:8000
+### 2. Environment Setup
+```bash
+# Client (.env.local)
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 
-## 📖 Key Features Documentation
+# Server (.env)
+PORT=8000
+MONGO_URI=mongodb://localhost:27017/codefode
+COHERE_API_KEY=your_cohere_api_key
+```
 
-### 🤖 AI-Powered Code Assistance
-- Intelligent code completion and suggestions
-- Real-time error detection and fixes
-- Code optimization recommendations
-- Documentation generation
+### 3. Run the Application
+```bash
+# Terminal 1 - Start Server
+cd server && npm run dev
+
+# Terminal 2 - Start Client
+cd client && npm run dev
+```
+
+### 4. Access
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:8000
+
+## 📖 Documentation Structure
+
+### 📱 [Client Documentation](./client/)
+- **[Quick Start Guide](./client/quick-start.md)** - Get started with the frontend
+- **[Components Guide](./client/components.md)** - UI components and usage
+- **[State Management](./client/state-management.md)** - Contexts and hooks
+- **[Real-time Features](./client/realtime.md)** - Socket.IO and collaboration
+
+### ⚙️ [Server Documentation](./server/)
+- **[Quick Start Guide](./server/quick-start.md)** - Backend setup and development
+- **[API Reference](./server/api.md)** - REST API endpoints
+- **[Socket Events](./server/sockets.md)** - Real-time communication
+- **[Database](./server/database.md)** - MongoDB models and operations
+
+## 🔧 Core Features
 
 ### 👥 Real-time Collaboration
-- Multi-user editing with conflict resolution
-- Live cursor tracking and user presence
-- Real-time chat and commenting
-- Activity logging and history
+- Multi-user code editing
+- Live cursor tracking
+- Real-time chat
+- User presence indicators
+
+### 🤖 AI-Powered Assistance
+- Code suggestions and completion
+- Error detection and fixes
+- Best practices recommendations
+- Powered by Cohere AI
+
+### 📁 File Management
+- File explorer with drag & drop
+- Multiple file tabs
+- Auto-save functionality
+- Project workspace persistence
 
 ### 🔐 Security & Authentication
-- Multi-factor authentication (MFA)
-- OAuth integration (Google)
+- User authentication system
 - Secure session management
-- Password reset functionality
+- Input validation and sanitization
+- Rate limiting
 
-### 🎨 User Experience
-- Customizable themes and layouts
-- Responsive design for all devices
-- Keyboard shortcuts and accessibility
-- File explorer and project management
+## 🛠️ Technology Stack
 
-## 🆘 Getting Help
+### Frontend (Next.js)
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript
+- **UI**: Tailwind CSS + Custom components
+- **Editor**: Monaco Editor (VS Code engine)
+- **Real-time**: Socket.IO Client
 
-- Check the [troubleshooting guide](./deployment/troubleshooting.md)
-- Review [common issues](./contributing/common-issues.md)
-- Submit [bug reports](./contributing/bug-reports.md)
+### Backend (Express.js)
+- **Framework**: Express.js with ES modules
+- **Language**: JavaScript
+- **Database**: MongoDB with Mongoose
+- **Real-time**: Socket.IO Server
+- **AI**: Cohere AI SDK
+
+## 📁 Project Structure
+
+```
+CodeFode-AI-code-editor/
+├── client/                 # Frontend (Next.js)
+│   ├── src/
+│   │   ├── app/           # Pages and layouts
+│   │   ├── components/    # Reusable components
+│   │   ├── context/       # State management
+│   │   ├── hooks/         # Custom React hooks
+│   │   └── services/      # API services
+│   └── package.json
+│
+├── server/                # Backend (Express.js)
+│   ├── src/
+│   │   ├── controllers/   # Business logic
+│   │   ├── models/        # Database schemas
+│   │   ├── routes/        # API routes
+│   │   ├── socket/        # Socket.IO handlers
+│   │   └── middleware/    # Express middleware
+│   └── package.json
+│
+└── docs/                  # Documentation
+    ├── client/            # Frontend docs
+    └── server/            # Backend docs
+```
+
+## 🔗 Key Integrations
+
+### AI Service (Cohere)
+- Code analysis and suggestions
+- Error detection and fixes
+- Best practices recommendations
+- Rate-limited API calls
+
+### Database (MongoDB)
+- Workspace persistence
+- User session management
+- File content storage
+- Activity logging
+
+### Real-time (Socket.IO)
+- Code synchronization
+- Cursor tracking
+- Chat messages
+- User presence
+
+## 🚨 Troubleshooting
+
+### Common Issues
+1. **Port conflicts**: Change ports in environment files
+2. **Database connection**: Ensure MongoDB is running
+3. **AI API errors**: Check Cohere API key validity
+4. **Socket connection**: Verify CORS and URL configuration
+
+### Development Tips
+- Use browser dev tools for client-side debugging
+- Check server logs for backend issues
+- Monitor network tab for API/socket issues
+- Use MongoDB Compass for database inspection
+
+## 📝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make changes and test thoroughly
+4. Update documentation if needed
+5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the main README for details.
+MIT License - see the main README for details.

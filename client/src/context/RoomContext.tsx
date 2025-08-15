@@ -357,7 +357,8 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
     };
 
     loadWorkspace();
-  }, [isInitialized, roomId]); // Removed workspaceLoaded from deps to allow reloading
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized, roomId]); // workspaceLoaded intentionally excluded to prevent loading loops
 
   // Reset workspaceLoaded when roomId changes
   useEffect(() => {

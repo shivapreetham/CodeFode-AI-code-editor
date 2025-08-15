@@ -38,7 +38,7 @@ const Chat: React.FC<ChatProps> = ({ socket, username, roomId }) => {
     return () => {
       socket.off(ACTIONS.RECEIVE_MESSAGE);
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, setMessages]);
 
 
   const sendMessage = () => {

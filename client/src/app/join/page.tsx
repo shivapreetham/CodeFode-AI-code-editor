@@ -28,7 +28,7 @@ export default function Home() {
     if (status === "authenticated") setUsername(session?.user?.email as string);
     else if(status=='loading')setUsername("Please Wait..")
     else setUsername("You Need to login");
-  }, [status]);
+  }, [status, session?.user?.email]);
   const notify = () => {
     toast.success("New room Id created successfully.");
   };
@@ -63,8 +63,7 @@ export default function Home() {
     if (!isPending && toastId) {
       toast.dismiss(toastId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPending]);
+  }, [isPending, toastId]);
 
   // To activate the server
   const handleServerWakeUp = async () => {

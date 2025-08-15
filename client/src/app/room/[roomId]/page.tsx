@@ -183,8 +183,11 @@ const RoomContent = () => {
 
     console.log('🔍 DEBUG: Setting up socket event listeners...');
 
+    // Capture socket reference for cleanup
+    const socket = socketRef.current;
+
     // Set up socket event listeners
-    socketRef.current.on(ACTIONS.JOINED, ({ clients, username: joinedUsername }: any) => {
+    socket.on(ACTIONS.JOINED, ({ clients, username: joinedUsername }: any) => {
       console.log('👥 User joined:', joinedUsername);
       if (joinedUsername !== username) {
         toast.success(`${joinedUsername} joined the room.`);
@@ -192,39 +195,38 @@ const RoomContent = () => {
       setClients(clients);
     });
 
-    socketRef.current.on(ACTIONS.LOAD_MESSAGES, (chatHistory: any[]) => {
+    socket.on(ACTIONS.LOAD_MESSAGES, (chatHistory: any[]) => {
       console.log('💬 Loading chat messages:', chatHistory.length);
       setMessages(chatHistory);
     });
 
-    socketRef.current.on(ACTIONS.DISCONNECTED, ({ username: leftUsername, socketId }: any) => {
+    socket.on(ACTIONS.DISCONNECTED, ({ username: leftUsername, socketId }: any) => {
       console.log('👋 User left:', leftUsername);
       toast.success(`${leftUsername} left the room.`);
       setClients((prev: any[]) => prev.filter((client: any) => client.socketId !== socketId));
     });
 
-    socketRef.current.on(ACTIONS.NOTIFICATION_ADDED, ({ notification }: any) => {
+    socket.on(ACTIONS.NOTIFICATION_ADDED, ({ notification }: any) => {
       console.log('🔔 Notification received:', notification.type);
       setNotifications(prev => [notification, ...prev]);
     });
 
-    socketRef.current.on(ACTIONS.CURSOR_CHANGE, (data: any) => {
+    socket.on(ACTIONS.CURSOR_CHANGE, (data: any) => {
       if (data.username === username) return;
       handleCursorChange(data);
     });
 
-    socketRef.current.on(ACTIONS.CODE_CHANGE, ({ payload }: any) => {
+    socket.on(ACTIONS.CODE_CHANGE, ({ payload }: any) => {
       console.log('🔄 Code change received from socket');
       handleCodeChange(payload);
     });
     
-    socketRef.current.on(ACTIONS.CODE_RESULT, (result: any) => {
+    socket.on(ACTIONS.CODE_RESULT, (result: any) => {
       console.log('📤 Code execution result received from socket');
       handleCodeResult(result);
     });
 
     return () => {
-      const socket = socketRef.current;
       if (socket) {
         console.log('🧹 Cleaning up socket event listeners...');
         socket.off(ACTIONS.JOINED);

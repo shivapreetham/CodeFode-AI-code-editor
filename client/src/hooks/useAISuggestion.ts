@@ -32,6 +32,13 @@ export interface AIResponse {
   };
 }
 
+// Server response wrapper
+interface ServerResponse {
+  success: boolean;
+  message?: string;
+  data?: AIResponse;
+}
+
 interface UseAISuggestionsProps {
   enabled?: boolean;
 }
@@ -63,7 +70,7 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
       // Log AI request for debugging
       console.info('[AI] Starting code analysis', { language, codeLength: code.length, timestamp: new Date().toISOString() });
       
-      response = await axios.post<AIResponse>(
+      response = await axios.post<ServerResponse | AIResponse>(
         url, 
         { code, language },
         {
@@ -80,9 +87,11 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
       });
       
       // Handle wrapped response format from backend
-      let aiData = response.data;
-      if (response.data.success && response.data.data) {
+      let aiData: AIResponse;
+      if ('success' in response.data && response.data.data) {
         aiData = response.data.data;
+      } else {
+        aiData = response.data as AIResponse;
       }
       
       // Simple validation with fallbacks
@@ -104,12 +113,15 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
       });
       
       setAIResponse(validatedResponse);
-    } catch (err) {
+    } catch (err: unknown) {
+      // Type guard for error handling
+      const error = err as any;
+      
       // Log AI error for debugging
       console.error('[AI] Analysis failed', {
-        error: err.message || 'Unknown error',
-        code: err.code,
-        status: err.response?.status,
+        error: error?.message || 'Unknown error',
+        code: error?.code,
+        status: error?.response?.status,
         language,
         codeLength: code.length,
         timestamp: new Date().toISOString()
@@ -117,16 +129,16 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
       
       let errorMessage = 'Failed to analyze code';
       
-      if (err instanceof AxiosError) {
-        if (err.response?.status === 429) {
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 429) {
           errorMessage = 'Rate limit exceeded. Please try again later.';
-        } else if (err.code === 'ECONNABORTED') {
+        } else if (error.code === 'ECONNABORTED') {
           errorMessage = 'Request timed out. Please try again.';
-        } else if (err.response?.data?.error) {
-          errorMessage = err.response.data.error;
-        } else if (err.response?.status === 404) {
+        } else if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response?.status === 404) {
           errorMessage = 'AI service not available. Please check backend connection.';
-        } else if (err.response?.status === 500) {
+        } else if (error.response?.status === 500) {
           errorMessage = 'AI service error. Please try again.';
         }
       }

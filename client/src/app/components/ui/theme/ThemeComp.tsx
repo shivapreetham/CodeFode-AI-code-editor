@@ -16,8 +16,11 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ language = "javascript" }
 
   useEffect(() => {
     setEditorTheme(theme); // Sync with context
+  }, [theme]);
+
+  useEffect(() => {
     setFontSize(fontSize);
-  }, [theme,fontSize]);
+  }, [fontSize, setFontSize]);
 
   return (
     <div className="flex flex-col items-center p-4 w-full">

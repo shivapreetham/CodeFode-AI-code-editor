@@ -1,5 +1,9 @@
 import { cohere } from '@ai-sdk/cohere';
 import { generateText } from 'ai';
+import { asyncHandler, ValidationError } from '../middleware/errorHandler.js';
+import { successResponse, errorResponse } from '../utils/response.js';
+import { logger } from '../middleware/logger.js';
+import config from '../config/environment.js';
 
 const parseErrorResponse = (text) => {
   const errors = [];
@@ -208,7 +212,28 @@ const parseDocumentation = (text) => {
 
   return documentation; // Add this return statement
 };
-export const processCodeWithAI = async (code, language) => {
+export const processCodeWithAI = asyncHandler(async (req, res) => {
+  const { code, language } = req.body;
+  
+  // Validate inputs
+  if (!code || !language) {
+    throw new ValidationError('Code and language are required');
+  }
+  
+  if (code.length > config.files.maxCodeLength) {
+    throw new ValidationError(`Code length exceeds maximum allowed (${config.files.maxCodeLength} characters)`);
+  }
+  
+  logger.info('AI code processing request', { 
+    language,
+    codeLength: code.length 
+  });
+  
+  // Check if AI service is available
+  if (!config.ai.cohereApiKey) {
+    throw new ValidationError('AI service not configured');
+  }
+  
   try {
     const [errorResponse, suggestionResponse, practiceResponse, documentationResponse] = await Promise.all([
       generateText({
@@ -276,18 +301,37 @@ export const processCodeWithAI = async (code, language) => {
       })
     ]);
 
-
-    const response = {
+    const responseData = {
       errors: parseErrorResponse(errorResponse.text),
       suggestions: parseSuggestions(suggestionResponse.text),
       bestPractices: parsePractices(practiceResponse.text),
-      documentation : parseDocumentation(documentationResponse.text),
-      timestamp: new Date().toISOString()
+      documentation: parseDocumentation(documentationResponse.text),
+      metadata: {
+        language,
+        codeLength: code.length,
+        processedAt: new Date().toISOString()
+      }
     };
     
-    return response;
+    logger.info('AI code processing completed', { 
+      language,
+      errorsFound: responseData.errors.length,
+      suggestionsGenerated: responseData.suggestions.length,
+      practicesGenerated: responseData.bestPractices.length
+    });
+    
+    return successResponse(res, responseData, 'Code analysis completed successfully');
+    
   } catch (error) {
-    console.error('Error in AI code processing:', error);
-    throw new Error('Failed to process code with AI');
+    logger.error('AI code processing failed', { 
+      language,
+      error: error.message 
+    });
+    
+    if (error.message.includes('rate limit') || error.message.includes('quota')) {
+      return errorResponse(res, 'AI service rate limit exceeded. Please try again later.', 429);
+    }
+    
+    throw new Error('Failed to process code with AI: ' + error.message);
   }
-};
+});

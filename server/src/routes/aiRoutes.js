@@ -1,26 +1,17 @@
 import express from 'express';
 import { processCodeWithAI } from '../controllers/aiCodeController.js';
+import { validate, aiCodeSchema } from "../middleware/validation.js";
+import { aiResultCache } from "../middleware/cache.js";
+import { codeExecutionLimiter } from "../middleware/security.js";
 
 const router = express.Router();
 
-router.post('/code', async (req, res) => {
-  try {
-    const { code, language } = req.body;
-    console.log(req.body, "recieved the code")
-    if (!code || !language) {
-      return res.status(400).json({
-        error: 'Code and language are required'
-      });
-    }
-
-    const result = await processCodeWithAI(code, language);
-    res.json(result);
-  } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).json({
-      error: 'Failed to process code'
-    });
-  }
-});
+// POST /api/ai/code (with validation, caching, and rate limiting)
+router.post('/code', 
+  codeExecutionLimiter,
+  validate(aiCodeSchema),
+  aiResultCache,
+  processCodeWithAI
+);
 
 export default router;

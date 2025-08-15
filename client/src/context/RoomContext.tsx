@@ -101,9 +101,22 @@ interface RoomProviderProps {
 export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, username }) => {
   console.log('🔍 DEBUG: RoomProvider initialized with:', { roomId, username });
   
-  // Validate props immediately
-  if (!roomId || roomId === 'undefined' || !username) {
-    console.error('❌ ERROR: Invalid room parameters in RoomProvider');
+  // Validate props immediately with enhanced validation
+  if (!roomId || 
+      roomId === 'undefined' || 
+      roomId.trim() === '' ||
+      roomId.length < 3 || 
+      roomId.length > 100 ||
+      !/^[A-Za-z0-9_-]+$/.test(roomId) ||
+      !username || 
+      username.trim() === '' ||
+      username.length < 2 ||
+      username.length > 50 ||
+      !/^[A-Za-z0-9_-\s]+$/.test(username)) {
+    console.error('❌ ERROR: Invalid room parameters in RoomProvider', {
+      roomId: { value: roomId, valid: roomId && roomId !== 'undefined' && /^[A-Za-z0-9_-]+$/.test(roomId) },
+      username: { value: username, valid: username && /^[A-Za-z0-9_-\s]+$/.test(username) }
+    });
     throw new Error(`Invalid room parameters: roomId=${roomId}, username=${username}`);
   }
 
@@ -141,22 +154,46 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         socketRef.current = await initSocket();
         console.log('✅ Socket instance created');
         
-        // Set up socket connection handlers
+        // Set up socket connection handlers with enhanced error handling
         socketRef.current.on("connect_error", (err: any) => {
           console.error("❌ Socket connection error:", err);
           setIsInitialized(false);
-          toast.error("Failed to connect to server");
+          
+          // More specific error messages
+          if (err.type === 'TransportError') {
+            toast.error("Network connection failed. Please check your internet connection.");
+          } else if (err.message?.includes('timeout')) {
+            toast.error("Connection timeout. The server may be busy.");
+          } else {
+            toast.error("Failed to connect to server. Please try again later.");
+          }
         });
 
         socketRef.current.on("connect", () => {
           console.log("✅ Socket connected, joining room:", roomId);
-          socketRef.current.emit(ACTIONS.JOIN, { roomId, username });
-          setIsInitialized(true);
+          try {
+            socketRef.current.emit(ACTIONS.JOIN, { roomId, username });
+            setIsInitialized(true);
+            toast.success('Connected to room successfully!');
+          } catch (error) {
+            console.error('❌ Error joining room:', error);
+            toast.error('Failed to join room');
+            setIsInitialized(false);
+          }
         });
 
         socketRef.current.on("disconnect", (reason: string) => {
           console.log("🔌 Socket disconnected:", reason);
           setIsInitialized(false);
+          
+          // Handle different disconnect reasons
+          if (reason === 'io server disconnect') {
+            toast.error('Disconnected by server. Please refresh the page.');
+          } else if (reason === 'transport close') {
+            toast.error('Connection lost. Attempting to reconnect...');
+          } else if (reason !== 'io client disconnect') {
+            toast.error('Connection lost. Please check your internet connection.');
+          }
         });
 
         // If already connected, emit join immediately
@@ -197,10 +234,19 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         return;
       }
 
-      // Fix: Additional validation - ensure roomId is a valid format
-      if (!roomId || roomId === 'undefined' || !/^[A-Za-z0-9_-]+$/.test(roomId)) {
-        console.error('❌ ERROR: Invalid roomId format in loadWorkspace:', roomId);
-        console.error('❌ ERROR: roomId must match pattern: /^[A-Za-z0-9_-]+$/');
+      // Enhanced validation - ensure roomId is a valid format
+      if (!roomId || 
+          roomId === 'undefined' || 
+          roomId.trim() === '' ||
+          roomId.length < 3 || 
+          roomId.length > 100 ||
+          !/^[A-Za-z0-9_-]+$/.test(roomId)) {
+        console.error('❌ ERROR: Invalid roomId format in loadWorkspace:', {
+          roomId,
+          length: roomId?.length,
+          pattern: roomId ? /^[A-Za-z0-9_-]+$/.test(roomId) : false
+        });
+        toast.error('Invalid room ID format');
         return;
       }
       
@@ -214,15 +260,47 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
           console.log('✅ Existing workspace loaded');
           console.log('📁 Files in workspace:', workspace.filesContentMap.size);
           
-          setFileExplorerData(workspace.fileExplorerData);
-          setFiles(workspace.openFiles);
-          setActiveFile(workspace.activeFile);
+          // Validate workspace data before setting
+          try {
+            if (workspace.fileExplorerData) {
+              setFileExplorerData(workspace.fileExplorerData);
+            } else {
+              console.warn('⚠️ No file explorer data in workspace, using default');
+              setFileExplorerData(DEFAULT_EXPLORER);
+            }
+            
+            if (Array.isArray(workspace.openFiles) && workspace.openFiles.length > 0) {
+              setFiles(workspace.openFiles);
+            } else {
+              console.warn('⚠️ No open files in workspace, using default');
+              setFiles([DEFAULT_FILE]);
+            }
+            
+            if (workspace.activeFile && workspace.activeFile.path) {
+              setActiveFile(workspace.activeFile);
+            } else {
+              console.warn('⚠️ No active file in workspace, using default');
+              setActiveFile(workspace.openFiles?.[0] || DEFAULT_FILE);
+            }
 
-          // Clear and update filesContentMap
-          filesContentMap.clear();
-          workspace.filesContentMap.forEach((file: IFile, path: string) => {
-            filesContentMap.set(path, file);
-          });
+            // Clear and update filesContentMap with validation
+            filesContentMap.clear();
+            if (workspace.filesContentMap instanceof Map) {
+              workspace.filesContentMap.forEach((file: IFile, path: string) => {
+                if (file && typeof file === 'object' && file.path && file.name) {
+                  filesContentMap.set(path, file);
+                } else {
+                  console.warn('⚠️ Invalid file data in workspace:', { path, file });
+                }
+              });
+            } else {
+              console.warn('⚠️ filesContentMap is not a Map, setting default');
+              filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
+            }
+          } catch (error) {
+            console.error('❌ Error processing workspace data:', error);
+            throw error; // Re-throw to trigger catch block below
+          }
         } else {
           console.log('📝 Creating new workspace with defaults');
           // Set defaults for new workspace
@@ -235,19 +313,34 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         
         setWorkspaceLoaded(true);
         console.log('✅ Workspace loading completed');
-      } catch (error) {
+      } catch (error: any) {
         console.error("❌ Error loading workspace:", error);
         
-        // Set defaults on error
+        // Set defaults on error with enhanced error handling
         console.log('📝 Setting default workspace due to error');
-        setFileExplorerData(DEFAULT_EXPLORER);
-        setFiles([DEFAULT_FILE]);
-        setActiveFile(DEFAULT_FILE);
-        filesContentMap.clear();
-        filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
-        setWorkspaceLoaded(true);
         
-        toast.error("Failed to load workspace, using defaults");
+        try {
+          setFileExplorerData(DEFAULT_EXPLORER);
+          setFiles([DEFAULT_FILE]);
+          setActiveFile(DEFAULT_FILE);
+          filesContentMap.clear();
+          filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
+          setWorkspaceLoaded(true);
+          
+          // More specific error messages
+          if (error?.response?.status === 404) {
+            toast.error("Workspace not found. Creating a new one.");
+          } else if (error?.response?.status === 403) {
+            toast.error("Access denied to workspace. Using defaults.");
+          } else if (error?.code === 'NETWORK_ERROR') {
+            toast.error("Network error. Please check your connection.");
+          } else {
+            toast.error("Failed to load workspace. Using defaults.");
+          }
+        } catch (fallbackError) {
+          console.error('❌ Critical error setting default workspace:', fallbackError);
+          toast.error('Critical error occurred. Please refresh the page.');
+        }
       } finally {
         setLoading(false);
       }
@@ -272,13 +365,25 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
     type: NotificationType,
     details: { username: string; fileName?: string; folderName?: string; path?: string }
   ) => {
+    // Enhanced validation
     if (!isInitialized) {
       console.log('🔍 DEBUG: Notification skipped - not initialized');
       return;
     }
     
+    if (!details.username || details.username.trim() === '') {
+      console.error('❌ Invalid username for notification:', details);
+      return;
+    }
+    
     try {
       const message = createNotificationMessage(type, details);
+      
+      if (!message || message.trim() === '') {
+        console.error('❌ Empty notification message generated');
+        return;
+      }
+      
       const metadata = {
         path: details.path,
         language: details.fileName ? getFileLanguage(details.fileName) : undefined,
@@ -290,6 +395,11 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         username: details.username,
         metadata
       });
+      
+      if (!newNotification) {
+        console.error('❌ Failed to create notification');
+        return;
+      }
 
       const typedNotification: Notification = {
         type: newNotification.type,
@@ -299,14 +409,30 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         metadata: newNotification.metadata
       };
 
-      setNotifications(prev => [typedNotification, ...prev]);
+      setNotifications(prev => [typedNotification, ...prev.slice(0, 99)]); // Keep only last 100 notifications
       
-      socketRef?.current?.emit(ACTIONS.NOTIFICATION_ADDED, {
-        roomId,
-        notification: typedNotification
-      });
-    } catch (error) {
+      // Emit socket event with error handling
+      if (socketRef?.current?.connected) {
+        try {
+          socketRef.current.emit(ACTIONS.NOTIFICATION_ADDED, {
+            roomId,
+            notification: typedNotification
+          });
+        } catch (socketError) {
+          console.error('❌ Error emitting notification via socket:', socketError);
+        }
+      } else {
+        console.warn('⚠️ Socket not connected, notification not broadcasted');
+      }
+    } catch (error: any) {
       console.error('❌ Error adding notification:', error);
+      
+      // Show user-friendly error message
+      if (error?.response?.status === 429) {
+        console.warn('⚠️ Rate limited - notification not added');
+      } else {
+        toast.error('Failed to add notification');
+      }
     }
   }, [roomId, socketRef, isInitialized]);
 

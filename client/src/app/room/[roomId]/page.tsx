@@ -4,6 +4,7 @@ import React, { useContext, useEffect, useRef, useCallback, useState, useMemo } 
 import { useSession } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
 import "./page.css";
+import ErrorBoundary from "@/app/components/common/ErrorBoundary";
 
 // Components
 import Sidebar from "@/app/components/room/Sidebar";
@@ -219,15 +220,16 @@ const RoomContent = () => {
     });
 
     return () => {
-      if (socketRef.current) {
+      const socket = socketRef.current;
+      if (socket) {
         console.log('🧹 Cleaning up socket event listeners...');
-        socketRef.current.off(ACTIONS.JOINED);
-        socketRef.current.off(ACTIONS.DISCONNECTED);
-        socketRef.current.off(ACTIONS.CODE_CHANGE);
-        socketRef.current.off(ACTIONS.NOTIFICATION_ADDED);
-        socketRef.current.off(ACTIONS.CURSOR_CHANGE);
-        socketRef.current.off(ACTIONS.CODE_RESULT);
-        socketRef.current.off(ACTIONS.LOAD_MESSAGES);
+        socket.off(ACTIONS.JOINED);
+        socket.off(ACTIONS.DISCONNECTED);
+        socket.off(ACTIONS.CODE_CHANGE);
+        socket.off(ACTIONS.NOTIFICATION_ADDED);
+        socket.off(ACTIONS.CURSOR_CHANGE);
+        socket.off(ACTIONS.CODE_RESULT);
+        socket.off(ACTIONS.LOAD_MESSAGES);
       }
     };
   }, [isInitialized, socketRef, setClients, setMessages, setNotifications, handleCursorChange, handleCodeChange, handleCodeResult, username]);
@@ -314,6 +316,7 @@ const RoomContent = () => {
   useEffect(() => {
     const currentContent = filesContentMap.get(activeFile?.path)?.content || activeFile?.content;
     const currentLanguage = activeFile?.language;
+    const fileName = activeFile?.name;
     
     console.log('🧠 AI useEffect:', { 
       activeTab, 
@@ -321,7 +324,7 @@ const RoomContent = () => {
       hasLang: !!currentLanguage, 
       contentLength: currentContent?.length || 0, 
       language: currentLanguage,
-      activeFile: activeFile?.name
+      activeFile: fileName
     });
 
     if (activeTab === 4 && currentContent && currentLanguage) {
@@ -355,7 +358,7 @@ const RoomContent = () => {
       }
       setIsDebouncing(false);
     }
-  }, [activeTab, activeFile?.path, filesContentMap, fetchSuggestions]);
+  }, [activeTab, activeFile?.path, activeFile?.content, activeFile?.language, activeFile?.name, filesContentMap, fetchSuggestions]);
 
   // Manual AI trigger function
   const handleManualAITrigger = useCallback(() => {
@@ -377,7 +380,7 @@ const RoomContent = () => {
         hasLanguage: !!currentLanguage
       });
     }
-  }, [activeFile?.path, filesContentMap, fetchSuggestions]);
+  }, [activeFile?.path, activeFile?.content, activeFile?.language, filesContentMap, fetchSuggestions]);
 
   // Handle notes toggle
   const handleToggleNotes = useCallback(() => {
@@ -402,26 +405,59 @@ const RoomContent = () => {
   // Loading state - handled by RoomContext
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+      <div className="flex items-center justify-center h-screen bg-surface-light dark:bg-surface-dark">
+        <div className="text-center p-8">
+          <div className="loading-spinner w-12 h-12 border-primary-500 mx-auto mb-6"></div>
+          <h2 className="text-xl font-semibold text-primary-theme mb-3">
             Connecting to room...
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
+          <p className="text-secondary-theme mb-2">
             Please wait while we establish the connection.
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Room: {roomId} | User: {username}
-          </p>
+          <div className="card p-4 max-w-sm mx-auto mt-4">
+            <p className="text-sm text-secondary-theme">
+              <span className="font-medium">Room:</span> {roomId}
+            </p>
+            <p className="text-sm text-secondary-theme">
+              <span className="font-medium">User:</span> {username}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col md:flex-row">
-      <Toaster />
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        console.error('Room page error:', error, errorInfo);
+        // Log to error reporting service here if needed
+      }}
+    >
+      <div className="flex flex-col md:flex-row bg-surface-light dark:bg-surface-dark min-h-screen">
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'var(--color-surface-light)',
+              color: 'var(--color-text)',
+              border: '1px solid var(--color-border)',
+            },
+            success: {
+              style: {
+                background: 'var(--color-success)',
+                color: 'white',
+              },
+            },
+            error: {
+              style: {
+                background: 'var(--color-error)',
+                color: 'white',
+              },
+            },
+          }}
+        />
 
       {/* Left Sidebar */}
       <Sidebar
@@ -501,15 +537,16 @@ const RoomContent = () => {
         />
       </div>
 
-      {/* Code Visualization Modal */}
-      <CodeVisualization
-        isOpen={showVisualization}
-        onClose={handleCloseVisualization}
-        files={files}
-        fileExplorerData={fileExplorerData}
-        filesContentMap={filesContentMap}
-      />
-    </div>
+        {/* Code Visualization Modal */}
+        <CodeVisualization
+          isOpen={showVisualization}
+          onClose={handleCloseVisualization}
+          files={files}
+          fileExplorerData={fileExplorerData}
+          filesContentMap={filesContentMap}
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
 
@@ -532,8 +569,13 @@ const Page = () => {
       const rawRoomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
       console.log('🔍 DEBUG: Raw roomId from params:', rawRoomId);
       
-      // Fix: Additional validation - ensure roomId is not "undefined" string
-      if (rawRoomId && rawRoomId !== 'undefined' && rawRoomId.trim() !== '' && /^[A-Za-z0-9_-]+$/.test(rawRoomId.trim())) {
+      // Enhanced validation - ensure roomId is not "undefined" string and meets format requirements
+      if (rawRoomId && 
+          rawRoomId !== 'undefined' && 
+          rawRoomId.trim() !== '' && 
+          rawRoomId.length >= 3 && 
+          rawRoomId.length <= 100 && 
+          /^[A-Za-z0-9_-]+$/.test(rawRoomId.trim())) {
         extractedRoomId = rawRoomId.trim();
         console.log('✅ Valid roomId extracted:', extractedRoomId);
       } else {
@@ -548,11 +590,18 @@ const Page = () => {
     const rawUsername = query.get("username");
     console.log('🔍 DEBUG: Raw username from query:', rawUsername);
     
-    if (rawUsername && rawUsername.trim() !== '') {
+    if (rawUsername && 
+        rawUsername.trim() !== '' && 
+        rawUsername.length >= 2 && 
+        rawUsername.length <= 50 && 
+        /^[A-Za-z0-9_-\s]+$/.test(rawUsername.trim())) {
       extractedUsername = rawUsername.trim();
       console.log('✅ Valid username extracted:', extractedUsername);
     } else {
-      console.error('❌ Invalid username:', rawUsername);
+      console.error('❌ Invalid username:', rawUsername, {
+        length: rawUsername?.length,
+        pattern: rawUsername ? /^[A-Za-z0-9_-\s]+$/.test(rawUsername.trim()) : false
+      });
     }
 
     console.log('🔍 DEBUG: Final extracted values:', { extractedRoomId, extractedUsername });
@@ -563,34 +612,45 @@ const Page = () => {
     };
   }, [params, query]);
 
-  // Authentication check
+  // Authentication check with error handling
   const { status } = useSession();
+  
   useEffect(() => {
-    if (status === "unauthenticated") {
-      console.log('🔐 User not authenticated, redirecting to login...');
-      router.push("/login");
+    try {
+      if (status === "unauthenticated") {
+        console.log('🔐 User not authenticated, redirecting to login...');
+        toast.error('Please log in to access this room');
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error('❌ Authentication check failed:', error);
+      toast.error('Authentication error occurred');
     }
   }, [status, router]);
 
-  // Handle URL parameters
+  // Handle URL parameters with error handling
   useEffect(() => {
-    const toastId = query.get("toastId");
-    if (toastId) {
-      console.log('🍞 Dismissing toast:', toastId);
-      toast.dismiss(toastId);
+    try {
+      const toastId = query.get("toastId");
+      if (toastId) {
+        console.log('🍞 Dismissing toast:', toastId);
+        toast.dismiss(toastId);
+      }
+    } catch (error) {
+      console.error('❌ Error handling URL parameters:', error);
     }
   }, [query]);
 
   // Show loading state while session is loading
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+      <div className="flex items-center justify-center h-screen bg-surface-light dark:bg-surface-dark">
+        <div className="text-center p-8">
+          <div className="loading-spinner w-12 h-12 border-primary-500 mx-auto mb-6"></div>
+          <h2 className="text-xl font-semibold text-primary-theme mb-3">
             Loading session...
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
+          <p className="text-secondary-theme">
             Please wait while we verify your authentication.
           </p>
         </div>
@@ -608,47 +668,68 @@ const Page = () => {
     console.error('❌ ERROR: Current URL:', typeof window !== 'undefined' ? window.location.href : 'unknown');
     
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="text-center max-w-md mx-auto p-6">
-          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
-            Invalid Room Access
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Missing or invalid room parameters. Please check your URL and try again.
-          </p>
-          
-          <div className="bg-gray-200 dark:bg-gray-800 p-4 rounded-lg mb-4 text-left">
-            <h3 className="font-semibold mb-2">Debug Information:</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              <span className="font-medium">RoomId:</span> <span className="font-mono bg-gray-300 dark:bg-gray-700 px-1 rounded">{roomId || 'undefined'}</span>
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              <span className="font-medium">Username:</span> <span className="font-mono bg-gray-300 dark:bg-gray-700 px-1 rounded">{username || 'undefined'}</span>
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              <span className="font-medium">URL Path:</span> <span className="font-mono bg-gray-300 dark:bg-gray-700 px-1 rounded text-xs">{typeof window !== 'undefined' ? window.location.pathname : 'unknown'}</span>
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium">Query String:</span> <span className="font-mono bg-gray-300 dark:bg-gray-700 px-1 rounded text-xs">{query.toString() || 'empty'}</span>
+      <div className="flex items-center justify-center h-screen bg-surface-light dark:bg-surface-dark p-4">
+        <div className="card max-w-md mx-auto p-6 text-center">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-error-light rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-error mb-2">
+              Invalid Room Access
+            </h1>
+            <p className="text-secondary-theme mb-4">
+              Missing or invalid room parameters. Please check your URL and try again.
             </p>
           </div>
           
-          <div className="space-y-2">
-            <button
-              onClick={() => router.push("/")}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-            >
-              Go Home
-            </button>
-                <button
-              onClick={() => window.location.reload()}
-              className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-            >
-              Reload Page
-                </button>
+          <div className="bg-surface dark:bg-surface-darker p-4 rounded-lg mb-6 text-left">
+            <h3 className="font-semibold text-primary-theme mb-3">Debug Information:</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-secondary-theme">Room ID:</span>
+                <span className="font-mono bg-secondary-100 dark:bg-secondary-800 px-2 py-1 rounded text-xs">
+                  {roomId || 'undefined'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary-theme">Username:</span>
+                <span className="font-mono bg-secondary-100 dark:bg-secondary-800 px-2 py-1 rounded text-xs">
+                  {username || 'undefined'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary-theme">URL Path:</span>
+                <span className="font-mono bg-secondary-100 dark:bg-secondary-800 px-2 py-1 rounded text-xs max-w-48 truncate">
+                  {typeof window !== 'undefined' ? window.location.pathname : 'unknown'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary-theme">Query:</span>
+                <span className="font-mono bg-secondary-100 dark:bg-secondary-800 px-2 py-1 rounded text-xs max-w-48 truncate">
+                  {query.toString() || 'empty'}
+                </span>
               </div>
             </div>
           </div>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push("/")}
+              className="btn-primary w-full px-4 py-2 rounded-lg font-medium"
+            >
+              Go Home
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn-secondary w-full px-4 py-2 rounded-lg font-medium"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

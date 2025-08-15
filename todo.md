@@ -1,9 +1,9 @@
-remaining 6 hrs 
+i want to make it really innovative and crazy - craze is for 2 parts that are going to get integrateed ,,
 
-work remaining -
+one is the white board thing where we can even select text box and type , doodle and so on.
 
-    1.bug of newly entered user -- shivapreetham
-    2.terminal run of the files -- aditya raj
-    3.window size variation 
-    4.ui enhancement on room page -- pritam
-    5.ai ehancement -- shivapreetham
+second is to put in web rtc, currently we shall do it for 2 users and later we shall think of scaling it to still
+better users.
+
+and if possible i want the things to have version control too. 
+

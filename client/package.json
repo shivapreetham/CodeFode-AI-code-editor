@@ -19,6 +19,7 @@
     "ai": "^4.1.16",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
+    "daisyui": "^5.0.50",
     "framer-motion": "^11.5.6",
     "lucide-react": "^0.474.0",
     "mongodb": "^6.13.0",

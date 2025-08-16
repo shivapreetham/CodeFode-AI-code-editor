@@ -10,15 +10,17 @@ const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: any }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="vscode-dark">
       <Providers>
         <ThemeProvider>
           <FontSizeProvider>
             <ActiveFileProvider>
-          <ChatProvider>
-          <body className={inter.className}>{children}</body>
-        `  </ChatProvider>
-        </ActiveFileProvider>
+              <ChatProvider>
+                <body className={inter.className}>
+                  {children}
+                </body>
+              </ChatProvider>
+            </ActiveFileProvider>
           </FontSizeProvider>
         </ThemeProvider>
       </Providers>

@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import CloseIcon from "@mui/icons-material/Close";
+import { X } from "lucide-react";
 import { IFile } from '@/interfaces/IFile';
 
 interface FileTabsProps {
@@ -34,61 +34,46 @@ const FileTabs: React.FC<FileTabsProps> = ({
 
   if (!files || files.length === 0) {
     return (
-      <div className="h-[5vh] w-full bg-surface dark:bg-surface-dark border-b border-secondary-300 dark:border-secondary-700 flex items-center justify-center">
-        <span className="text-secondary-theme text-sm">No files open</span>
+      <div className="vscode-tabs-bar">
+        <span className="px-4 py-2 text-base" style={{ color: 'hsl(var(--bc) / 0.7)' }}>No files open</span>
       </div>
     );
   }
 
   return (
-    <div 
-      className="h-[5vh] w-full flex overflow-x-auto bg-surface dark:bg-surface-dark border-b border-secondary-300 dark:border-secondary-700"
-      role="tablist"
-      aria-label="Open files"
-    >
+    <div className="vscode-tabs-bar">
       {files.map((file, index) => {
         const isActive = activeFile?.path === file.path;
         
         return (
-          <button
+          <div
             key={`${file.path}-${index}`}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            aria-controls={`tabpanel-${file.path}`}
+            className={`file-tab ${isActive ? 'active' : ''} group`}
             onClick={() => handleFileChange(file)}
-            className={`
-              group relative flex items-center gap-2 px-4 py-2 text-sm border-r border-secondary-300 dark:border-secondary-700 min-w-fit max-w-48
-              transition-all duration-200 hover:bg-primary-50 dark:hover:bg-primary-950
-              ${isActive
-                ? "text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900 border-b-2 border-primary-500"
-                : "text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400"
-              }
-            `}
             title={`${file.name} - ${file.path}`}
           >
             {/* File icon based on language */}
-            <div className={`w-2 h-2 rounded-full ${
+            <div className={`file-tab-icon ${
               file.language === 'javascript' ? 'bg-yellow-500' :
               file.language === 'typescript' ? 'bg-blue-500' :
               file.language === 'python' ? 'bg-green-500' :
               file.language === 'css' ? 'bg-purple-500' :
               file.language === 'html' ? 'bg-orange-500' :
-              'bg-secondary-400'
+              'bg-gray-400'
             }`} />
             
-            <span className="truncate flex-1 text-left">{file.name}</span>
+            <span className="file-tab-name">{file.name}</span>
             
             <button
               type="button"
               onClick={(e) => handleFileClose(e, file)}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-error-light hover:text-error transition-all duration-200"
+              className="file-tab-close"
               title={`Close ${file.name}`}
               aria-label={`Close ${file.name}`}
             >
-              <CloseIcon sx={{ fontSize: "14px" }} />
+              <X className="w-4 h-4" />
             </button>
-          </button>
+          </div>
         );
       })}
     </div>

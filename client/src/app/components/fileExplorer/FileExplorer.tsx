@@ -203,27 +203,25 @@ function FileExplorer({
   }, [isFileExplorerUpdated, saveWorkspaceChanges]);
 
   return (
-    <div className="text-green-600 p-4">
-      <Typography
-        variant="h6"
-        component="h6"
-        className="border-b border-[#aaaaa] pb-1 mb-2 font-bold text-green-600"
-      >
-        EDITOR
-      </Typography>
-      <FileExplorerNode
-        handleInsertNode={handleInsertNode}
-        handleDeleteNode={handleDeleteNode}
-        handleRename={handleRename}
-        handleMove={handleMove}
-        fileExplorerNode={fileExplorerData}
-        activeFile={activeFile}
-        setActiveFile={setActiveFile}
-        files={files}
-        setFiles={setFiles}
-        isFileExplorerUpdated={isFileExplorerUpdated}
-        setIsFileExplorerUpdated={setIsFileExplorerUpdated}
-      />
+    <div className="w-full h-full">
+      <div className="px-4 py-3">
+        <h3 className="text-base font-semibold text-primary mb-3 pb-2 border-b border-base-300 uppercase tracking-wide">
+          EXPLORER
+        </h3>
+        <FileExplorerNode
+          handleInsertNode={handleInsertNode}
+          handleDeleteNode={handleDeleteNode}
+          handleRename={handleRename}
+          handleMove={handleMove}
+          fileExplorerNode={fileExplorerData}
+          activeFile={activeFile}
+          setActiveFile={setActiveFile}
+          files={files}
+          setFiles={setFiles}
+          isFileExplorerUpdated={isFileExplorerUpdated}
+          setIsFileExplorerUpdated={setIsFileExplorerUpdated}
+        />
+      </div>
     </div>
   );
 }

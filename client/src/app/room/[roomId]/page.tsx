@@ -375,22 +375,24 @@ const RoomContent = () => {
   // Loading state - handled by RoomContext
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center h-screen bg-surface-light dark:bg-surface-dark">
-        <div className="text-center p-8">
-          <div className="loading-spinner w-12 h-12 border-primary-500 mx-auto mb-6"></div>
-          <h2 className="text-xl font-semibold text-primary-theme mb-3">
-            Connecting to room...
-          </h2>
-          <p className="text-secondary-theme mb-2">
-            Please wait while we establish the connection.
-          </p>
-          <div className="card p-4 max-w-sm mx-auto mt-4">
-            <p className="text-sm text-secondary-theme">
-              <span className="font-medium">Room:</span> {roomId}
+      <div className="vscode-container">
+        <div className="flex items-center justify-center w-full h-full">
+          <div className="text-center p-8">
+            <div className="loading-spinner mx-auto mb-6"></div>
+            <h2 className="text-2xl font-semibold mb-4" style={{ color: 'hsl(var(--bc))' }}>
+              Connecting to room...
+            </h2>
+            <p className="text-lg mb-6" style={{ color: 'hsl(var(--bc) / 0.7)' }}>
+              Please wait while we establish the connection.
             </p>
-            <p className="text-sm text-secondary-theme">
-              <span className="font-medium">User:</span> {username}
-            </p>
+            <div className="p-6 rounded-lg max-w-md mx-auto" style={{ background: 'hsl(var(--b2))', border: '1px solid hsl(var(--b3))' }}>
+              <p className="text-base mb-2" style={{ color: 'hsl(var(--bc) / 0.7)' }}>
+                <span className="font-medium">Room:</span> {roomId}
+              </p>
+              <p className="text-base" style={{ color: 'hsl(var(--bc) / 0.7)' }}>
+                <span className="font-medium">User:</span> {username}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -404,108 +406,127 @@ const RoomContent = () => {
         // Log to error reporting service here if needed
       }}
     >
-      <div className="flex flex-col md:flex-row bg-surface-light dark:bg-surface-dark min-h-screen">
+      <div className={`vscode-container ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
         <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
             style: {
-              background: 'var(--color-surface-light)',
-              color: 'var(--color-text)',
-              border: '1px solid var(--color-border)',
+              background: 'hsl(var(--b2))',
+              color: 'hsl(var(--bc))',
+              border: '1px solid hsl(var(--b3))',
+              borderRadius: '8px',
+              fontSize: '16px',
+              padding: '12px 16px',
             },
             success: {
-              style: {
-                background: 'var(--color-success)',
-                color: 'white',
+              iconTheme: {
+                primary: 'hsl(var(--su))',
+                secondary: 'hsl(var(--suc))',
               },
             },
             error: {
-              style: {
-                background: 'var(--color-error)',
-                color: 'white',
+              iconTheme: {
+                primary: 'hsl(var(--er))',
+                secondary: 'hsl(var(--erc))',
               },
             },
           }}
         />
 
-      {/* Left Sidebar */}
-      <Sidebar
-        activeTab={activeTab}
-        isCollapsed={isCollapsed}
-        onTabChange={handleTabChange}
-        onToggleCollapse={toggleSidebar}
-      />
-
-      {/* Sidebar Panel */}
-      <SidebarPanel
-        activeTab={activeTab}
-        isCollapsed={isCollapsed}
-        roomId={roomId}
-        username={username}
-        clients={clients}
-        notifications={notifications}
-        onRefreshNotifications={handleRefreshNotifications}
-        fileExplorerData={fileExplorerData}
-        setFileExplorerData={setFileExplorerData}
-        activeFile={activeFile}
-        setActiveFile={setActiveFile}
-        files={files}
-        setFiles={setFiles}
-        isFileExplorerUpdated={isFileExplorerUpdated}
-        setIsFileExplorerUpdated={setIsFileExplorerUpdated}
-        filesContentMap={filesContentMap}
-        setNotifications={setNotifications}
-        socket={socketRef}
-        aiResponse={aiResponse}
-        aiLoading={aiLoading}
-        aiError={aiError}
-        onManualAITrigger={handleManualAITrigger}
-        isDebouncing={isDebouncing}
-      />
-
-      {/* Main Editor Area */}
-      <div
-        className={`coegle_editor h-screen ${
-          isCollapsed ? "md:w-[99.5%]" : "md:w-[95%]"
-        }`}
-      >
-        {/* File Tabs */}
-        <FileTabs
-          files={files}
-          activeFile={activeFile}
-          onFileChange={handleChangeActiveFile}
-          onFileClose={handleCloseFile}
-        />
-
-        {/* Code Editor */}
-        <CodeEditor
-          activeFile={activeFile}
-          isOutputExpand={isOutputExpand}
+        {/* Activity Bar */}
+        <Sidebar
+          activeTab={activeTab}
           isCollapsed={isCollapsed}
-          theme={theme}
-          fontSize={fontSize}
-          filesContentMap={filesContentMap}
-          onEditorChange={handleEditorChange}
-          onEditorDidMount={handleEditorDidMount}
-          aiSuggestions={aiInlineSuggestions}
-          onVisualizeCode={handleVisualizeCode}
-          onToggleNotes={handleToggleNotes}
-          showNotes={showNotes}
-          notes={notes.get(activeFile?.path || '') || ''}
-          onNotesChange={handleNotesChange}
+          onTabChange={handleTabChange}
+          onToggleCollapse={toggleSidebar}
         />
 
-        {/* Code Output */}
-        <CodeOutput
-          isOutputExpand={isOutputExpand}
-          codeOutput={codeOutput}
-          loading={loading}
-          codeStatus={codeStatus}
-          onToggleOutputVisibility={handleToggleOutputVisibility}
-          onRunCode={handleRunCode}
-        />
-      </div>
+        {/* Sidebar Panel */}
+        <div className="vscode-sidebar-panel">
+          <SidebarPanel
+            activeTab={activeTab}
+            isCollapsed={isCollapsed}
+            roomId={roomId}
+            username={username}
+            clients={clients}
+            notifications={notifications}
+            onRefreshNotifications={handleRefreshNotifications}
+            fileExplorerData={fileExplorerData}
+            setFileExplorerData={setFileExplorerData}
+            activeFile={activeFile}
+            setActiveFile={setActiveFile}
+            files={files}
+            setFiles={setFiles}
+            isFileExplorerUpdated={isFileExplorerUpdated}
+            setIsFileExplorerUpdated={setIsFileExplorerUpdated}
+            filesContentMap={filesContentMap}
+            setNotifications={setNotifications}
+            socket={socketRef}
+            aiResponse={aiResponse}
+            aiLoading={aiLoading}
+            aiError={aiError}
+            onManualAITrigger={handleManualAITrigger}
+            isDebouncing={isDebouncing}
+          />
+        </div>
+
+        {/* Main Editor Area */}
+        <div className="vscode-main-area">
+          {/* File Tabs */}
+          <FileTabs
+            files={files}
+            activeFile={activeFile}
+            onFileChange={handleChangeActiveFile}
+            onFileClose={handleCloseFile}
+          />
+
+          {/* Editor Content */}
+          <div className="vscode-editor-content">
+            <CodeEditor
+              activeFile={activeFile}
+              isOutputExpand={isOutputExpand}
+              isCollapsed={isCollapsed}
+              theme={theme}
+              fontSize={fontSize}
+              filesContentMap={filesContentMap}
+              onEditorChange={handleEditorChange}
+              onEditorDidMount={handleEditorDidMount}
+              aiSuggestions={aiInlineSuggestions}
+              onVisualizeCode={handleVisualizeCode}
+              onToggleNotes={handleToggleNotes}
+              showNotes={showNotes}
+              notes={notes.get(activeFile?.path || '') || ''}
+              onNotesChange={handleNotesChange}
+            />
+          </div>
+
+          {/* Code Output Panel */}
+          {isOutputExpand && (
+            <div style={{ height: '300px', borderTop: '1px solid hsl(var(--b3))' }}>
+              <CodeOutput
+                isOutputExpand={isOutputExpand}
+                codeOutput={codeOutput}
+                loading={loading}
+                codeStatus={codeStatus}
+                onToggleOutputVisibility={handleToggleOutputVisibility}
+                onRunCode={handleRunCode}
+              />
+            </div>
+          )}
+
+          {/* Status Bar */}
+          <div className="vscode-status-bar">
+            <div className="flex items-center space-x-4">
+              <span>Room: {roomId}</span>
+              <span>Users: {clients.length}</span>
+              {activeFile && <span>{activeFile.name} • {activeFile.language}</span>}
+            </div>
+            <div className="flex items-center space-x-2">
+              <span>CodeFode AI Editor</span>
+            </div>
+          </div>
+        </div>
 
         {/* Code Visualization Modal */}
         <CodeVisualization
@@ -605,15 +626,17 @@ const Page = () => {
   // Show loading state while session is loading
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center h-screen bg-surface-light dark:bg-surface-dark">
-        <div className="text-center p-8">
-          <div className="loading-spinner w-12 h-12 border-primary-500 mx-auto mb-6"></div>
-          <h2 className="text-xl font-semibold text-primary-theme mb-3">
-            Loading session...
-          </h2>
-          <p className="text-secondary-theme">
-            Please wait while we verify your authentication.
-          </p>
+      <div className="vscode-container">
+        <div className="flex items-center justify-center w-full h-full">
+          <div className="text-center p-8">
+            <div className="loading-spinner mx-auto mb-6"></div>
+            <h2 className="text-2xl font-semibold mb-4" style={{ color: 'hsl(var(--bc))' }}>
+              Loading session...
+            </h2>
+            <p className="text-lg" style={{ color: 'hsl(var(--bc) / 0.7)' }}>
+              Please wait while we verify your authentication.
+            </p>
+          </div>
         </div>
       </div>
     );

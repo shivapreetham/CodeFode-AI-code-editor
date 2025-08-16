@@ -38,6 +38,15 @@ interface SidebarPanelProps {
   isDebouncing?: boolean;
 }
 
+const tabLabels = {
+  0: "Explorer",
+  1: "Users",
+  2: "Chat", 
+  3: "Settings",
+  4: "AI Assistant",
+  5: "Notifications"
+};
+
 const SidebarPanel: React.FC<SidebarPanelProps> = ({
   activeTab,
   isCollapsed,
@@ -66,53 +75,78 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
   if (isCollapsed) return null;
 
   return (
-    <div className="w-full md:w-[30%] lg:w-[30%] md:h-screen bg-[#2d2a2a] border-r border-r-[#605c5c]">
-      {activeTab === 0 && (
-        <FileExplorer
-          fileExplorerData={fileExplorerData}
-          setFileExplorerData={setFileExplorerData}
-          activeFile={activeFile}
-          setActiveFile={setActiveFile}
-          files={files}
-          setFiles={setFiles}
-          isFileExplorerUpdated={isFileExplorerUpdated}
-          setIsFileExplorerUpdated={setIsFileExplorerUpdated}
-          roomId={roomId}
-          filesContentMap={filesContentMap}
-          notifications={notifications}
-          setNotifications={setNotifications}
-          socket={socket}
-          username={username}
-        />
-      )}
-      {activeTab === 1 && (
-        <Peoples clients={clients} roomId={roomId} />
-      )}
-      {activeTab === 2 && username && roomId && (
-        <Chat
-          socket={socket?.current}
-          username={username}
-          roomId={roomId}
-        />
-      )}
-      {activeTab === 3 && <ThemeSwitcher />}
-      {activeTab === 4 && (
-        <AiSuggestionSidebar
-          isOpen={true}
-          aiResponse={aiResponse}
-          isLoading={aiLoading}
-          error={aiError}
-          onManualTrigger={onManualAITrigger}
-          isDebouncing={isDebouncing}
-        />
-      )}
-      {activeTab === 5 && (
-        <ActivityLog
-          notifications={notifications}
-          onRefresh={onRefreshNotifications}
-        />
-      )}
-    </div>
+    <>
+      {/* Sidebar Header */}
+      <div className="sidebar-header">
+        {tabLabels[activeTab as keyof typeof tabLabels] || "Panel"}
+      </div>
+
+      {/* Sidebar Content */}
+      <div className="sidebar-content">
+        {activeTab === 0 && (
+          <FileExplorer
+            fileExplorerData={fileExplorerData}
+            setFileExplorerData={setFileExplorerData}
+            activeFile={activeFile}
+            setActiveFile={setActiveFile}
+            files={files}
+            setFiles={setFiles}
+            isFileExplorerUpdated={isFileExplorerUpdated}
+            setIsFileExplorerUpdated={setIsFileExplorerUpdated}
+            roomId={roomId}
+            filesContentMap={filesContentMap}
+            notifications={notifications}
+            setNotifications={setNotifications}
+            socket={socket}
+            username={username}
+          />
+        )}
+        
+        {activeTab === 1 && (
+          <div className="panel-content">
+            <Peoples clients={clients} roomId={roomId} />
+          </div>
+        )}
+        
+        {activeTab === 2 && username && roomId && (
+          <div className="panel-content">
+            <Chat
+              socket={socket?.current}
+              username={username}
+              roomId={roomId}
+            />
+          </div>
+        )}
+        
+        {activeTab === 3 && (
+          <div className="panel-content">
+            <ThemeSwitcher />
+          </div>
+        )}
+        
+        {activeTab === 4 && (
+          <div className="panel-content">
+            <AiSuggestionSidebar
+              isOpen={true}
+              aiResponse={aiResponse}
+              isLoading={aiLoading}
+              error={aiError}
+              onManualTrigger={onManualAITrigger}
+              isDebouncing={isDebouncing}
+            />
+          </div>
+        )}
+        
+        {activeTab === 5 && (
+          <div className="panel-content">
+            <ActivityLog
+              notifications={notifications}
+              onRefresh={onRefreshNotifications}
+            />
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 

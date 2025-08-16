@@ -32,73 +32,80 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-gradient-to-tl from-black to-gray-700 flex min-h-screen flex-col items-center justify-center py-16 px-8 sm:px-24">
-      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-lg border border-gray-200 rounded-lg shadow-xl">
-        <h2 className="text-3xl font-semibold text-white text-center mb-6">
-          Login
-        </h2>
+    <div className="hero min-h-screen bg-gradient-to-tl from-base-300 to-base-100">
+      <div className="hero-content text-center">
+        <div className="card w-full max-w-md shadow-2xl bg-base-100">
+          <div className="card-body">
+            <h2 className="card-title text-3xl font-bold justify-center mb-6">
+              Login
+            </h2>
 
-        {error && (
-          <p className="text-red-500 text-sm text-center mb-3">{error}</p>
-        )}
+            {error && (
+              <div className="alert alert-error mb-4">
+                <span>{error}</span>
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
-              required
-            />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="form-control">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input input-bordered w-full"
+                  required
+                />
+              </div>
+
+              <div className="form-control">
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input input-bordered w-full"
+                  required
+                />
+              </div>
+
+              <div className="form-control mt-6">
+                <button
+                  type="submit"
+                  className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : "Login"}
+                </button>
+              </div>
+
+              <div className="divider">or</div>
+
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+                className="btn btn-outline btn-error w-full"
+              >
+                Continue with Google
+              </button>
+
+              <div className="text-center mt-6 space-y-2">
+                <p className="text-sm">
+                  Don&apos;t have an account?{" "}
+                  <a href="/register" className="link link-primary">
+                    Register
+                  </a>
+                </p>
+                <p className="text-sm">
+                  Forgot Password?{" "}
+                  <a href="/forgot-password" className="link link-primary">
+                    Reset Password
+                  </a>
+                </p>
+              </div>
+            </form>
           </div>
-
-          <div>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
-            disabled={loading}
-          >
-            {loading ? "Loading..." : "Login"}
-          </button>
-
-          <div className="text-center text-sm font-medium text-gray-500 dark:text-gray-300">
-            or{" "}
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/" })}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg mt-2 transition"
-            >
-              Continue with Google
-            </button>
-          </div>
-
-          <div className="text-center text-sm text-white mt-4">
-            Don&apos;t have an account?{" "}
-            <a href="/register" className="text-blue-400 hover:underline">
-              Register
-            </a>
-          </div>
-          <div className="text-center text-sm text-white mt-4">
-            Forgot Password?{" "}
-            <a
-              href="/forgot-password"
-              className="text-blue-400 hover:underline"
-            >
-              Reset Password
-            </a>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

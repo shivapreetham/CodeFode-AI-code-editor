@@ -453,3 +453,11 @@ button:focus:not(:focus-visible) {
 .btn-secondary:hover {
   background: hsl(var(--b3) / 0.8);
 }
+
+/* Utility classes */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

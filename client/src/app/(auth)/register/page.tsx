@@ -68,117 +68,133 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tl from-black to-gray-700">
-      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-lg border text-white border-gray-200 rounded-lg shadow-xl">
-        <h2 className="text-3xl font-semibold text-white text-center mb-6">
-          {step === "register" ? "Register" : "Verify OTP"}
-        </h2>
+    <div className="hero min-h-screen bg-gradient-to-tl from-base-300 to-base-100">
+      <div className="hero-content text-center">
+        <div className="card w-full max-w-md shadow-2xl bg-base-100">
+          <div className="card-body">
+            <h2 className="card-title text-3xl font-bold justify-center mb-6">
+              {step === "register" ? "Register" : step === "otp" ? "Verify OTP" : "Success"}
+            </h2>
 
-        {error && (
-          <p className="text-red-500 text-sm text-center mb-3">{error}</p>
-        )}
+            {error && (
+              <div className="alert alert-error mb-4">
+                <span>{error}</span>
+              </div>
+            )}
 
-        {step === "register" ? (
-          // Registration Form
-          <form onSubmit={handleRegister} className="space-y-6">
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full p-3 bg-gray-100/50 border placeholder-white text-white border-gray-300 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
-            />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="w-full p-3 bg-gray-100/50 border placeholder-white border-gray-300 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
-            />
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
-              disabled={loading}
-            >
-              {loading ? "Registering..." : "Register"}
-            </button>
-          </form>
-        ) : step === "otp" ? (
-          // OTP Verification Form
-          <form onSubmit={handleOtpSubmit} className="space-y-6">
-            <p className="text-center text-sm text-white">
-              We&apos;ve sent an OTP to your email. Enter it below.
-            </p>
-            <input
-              type="text"
-              name="otp"
-              placeholder="Enter OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
-              className="w-full p-3 bg-gray-100/50 border placeholder-white text-white border-gray-300 text-sm rounded-lg focus:ring-green-500 focus:border-gray-500 outline-none"
-            />
-            <button
-              type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
-              disabled={loading}
-            >
-              {loading ? "Verifying..." : "Verify OTP"}
-            </button>
-          </form>
-        ) : (
-          // Verified Message & Redirect
-          <div className="text-center">
-            <p className="text-green-400 text-lg font-semibold">
-              OTP Verified Successfully! 🎉
-            </p>
-            <button
-              onClick={() => router.push("/login")}
-              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300"
-            >
-              Go to Login
-            </button>
+            {step === "register" ? (
+              // Registration Form
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="form-control">
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Full Name"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="input input-bordered w-full"
+                    required
+                  />
+                </div>
+                <div className="form-control">
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="input input-bordered w-full"
+                    required
+                  />
+                </div>
+                <div className="form-control">
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="input input-bordered w-full"
+                    required
+                  />
+                </div>
+                <div className="form-control mt-6">
+                  <button
+                    type="submit"
+                    className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
+                    disabled={loading}
+                  >
+                    {loading ? "Registering..." : "Register"}
+                  </button>
+                </div>
+              </form>
+            ) : step === "otp" ? (
+              // OTP Verification Form
+              <form onSubmit={handleOtpSubmit} className="space-y-4">
+                <div className="alert alert-info">
+                  <span>We've sent an OTP to your email. Enter it below.</span>
+                </div>
+                <div className="form-control">
+                  <input
+                    type="text"
+                    name="otp"
+                    placeholder="Enter OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="input input-bordered w-full"
+                    required
+                  />
+                </div>
+                <div className="form-control mt-6">
+                  <button
+                    type="submit"
+                    className={`btn btn-success w-full ${loading ? 'loading' : ''}`}
+                    disabled={loading}
+                  >
+                    {loading ? "Verifying..." : "Verify OTP"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              // Verified Message & Redirect
+              <div className="text-center space-y-4">
+                <div className="alert alert-success">
+                  <span>OTP Verified Successfully! 🎉</span>
+                </div>
+                <button
+                  onClick={() => router.push("/login")}
+                  className="btn btn-primary w-full"
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
+
+            {step === "register" && (
+              <>
+                <div className="divider">OR</div>
+                <button
+                  type="button"
+                  onClick={() => signIn("google", { callbackUrl: "/" })}
+                  className="btn btn-outline btn-error w-full"
+                >
+                  Sign up with Google
+                </button>
+              </>
+            )}
+
+            {step !== "verified" && (
+              <div className="text-center mt-6">
+                <p className="text-sm">
+                  Already have an account?{" "}
+                  <a href="/login" className="link link-primary">
+                    Login
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
-        )}
-
-        {step === "register" && (
-          <>
-            <div className="flex items-center my-6">
-              <div className="flex-1 border-t border-gray-600"></div>
-              <p className="mx-2 text-gray-400 text-sm">OR</p>
-              <div className="flex-1 border-t border-gray-600"></div>
-            </div>
-
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/" })}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-all duration-300"
-            >
-              Sign up with Google
-            </button>
-          </>
-        )}
-
-        {step !== "verified" && (
-          <p className="text-sm text-center text-white mt-4">
-            Already have an account?{" "}
-            <a href="/login" className="text-blue-400 hover:underline">
-              Login
-            </a>
-          </p>
-        )}
+        </div>
       </div>
     </div>
   );

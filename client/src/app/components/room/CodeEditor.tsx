@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { IFile } from '@/interfaces/IFile';
-import { Sparkles, FileText, Eye, MessageSquare, Lightbulb } from 'lucide-react';
+import { Sparkles, FileText, Eye, MessageSquare, Lightbulb, Plus } from 'lucide-react';
 
 interface CodeEditorProps {
   activeFile: IFile;
@@ -13,6 +13,8 @@ interface CodeEditorProps {
   onEditorChange: (content: string | undefined) => void;
   onEditorDidMount: (editor: any, monaco: any) => void;
   aiSuggestions?: string[];
+  aiResponse?: any;
+  onInsertCode?: (code: string) => void;
   onVisualizeCode?: () => void;
   onToggleNotes?: () => void;
   showNotes?: boolean;
@@ -30,6 +32,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onEditorChange,
   onEditorDidMount,
   aiSuggestions = [],
+  aiResponse,
+  onInsertCode,
   onVisualizeCode,
   onToggleNotes,
   showNotes = false,
@@ -38,7 +42,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
-  const [showAISuggestions, setShowAISuggestions] = useState(true);
   const [showInlineNotes, setShowInlineNotes] = useState(false);
 
   const editorHeight = isOutputExpand ? '60vh' : '85vh';
@@ -75,23 +78,25 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // Check if we have a valid active file
   if (!activeFile?.name || activeFile.name === "") {
     return (
-      <div className="text-xl text-gray-400 flex items-center justify-center h-[93vh] bg-[#1e1e1e]">
-        <div className="text-center">
-          <svg
-            className="w-16 h-16 mx-auto mb-4 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          <p className="text-lg font-medium">No file is open</p>
-          <p className="text-sm text-gray-500 mt-2">Open a file from the file explorer to start coding</p>
+      <div className="hero min-h-[93vh] bg-base-100">
+        <div className="hero-content text-center">
+          <div className="max-w-md">
+            <svg
+              className="w-16 h-16 mx-auto mb-4 opacity-50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <h1 className="text-xl font-medium">No file is open</h1>
+            <p className="py-4 opacity-70">Open a file from the file explorer to start coding</p>
+          </div>
         </div>
       </div>
     );
@@ -100,61 +105,50 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   return (
     <div className="relative">
       {/* Editor Toolbar */}
-      <div className="flex items-center justify-between p-2 bg-gray-800 border-b border-gray-700">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-300">
+      <div className="navbar bg-base-200 min-h-12 px-4">
+        <div className="navbar-start">
+          <span className="text-sm font-medium">
             {activeFile.name} ({activeFile.language})
           </span>
         </div>
         
-        <div className="flex items-center space-x-2">
-          {/* AI Suggestions Toggle */}
-          <button
-            onClick={() => setShowAISuggestions(!showAISuggestions)}
-            className={`p-2 rounded transition-colors ${
-              showAISuggestions 
-                ? 'bg-green-600 text-white' 
-                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-            }`}
-            title="Toggle AI Suggestions"
-          >
-            <Sparkles className="w-4 h-4" />
-          </button>
+        <div className="navbar-end">
+          <div className="btn-group">
+            {/* Inline Notes Toggle */}
+            <button
+              onClick={() => setShowInlineNotes(!showInlineNotes)}
+              className={`btn btn-sm ${
+                showInlineNotes 
+                  ? 'btn-info' 
+                  : 'btn-ghost'
+              }`}
+              title="Toggle Inline Notes"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
 
-          {/* Inline Notes Toggle */}
-          <button
-            onClick={() => setShowInlineNotes(!showInlineNotes)}
-            className={`p-2 rounded transition-colors ${
-              showInlineNotes 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-            }`}
-            title="Toggle Inline Notes"
-          >
-            <MessageSquare className="w-4 h-4" />
-          </button>
+            {/* Code Notes Panel */}
+            <button
+              onClick={onToggleNotes}
+              className={`btn btn-sm ${
+                showNotes 
+                  ? 'btn-secondary' 
+                  : 'btn-ghost'
+              }`}
+              title="Toggle Notes Panel"
+            >
+              <FileText className="w-4 h-4" />
+            </button>
 
-          {/* Code Notes Panel */}
-          <button
-            onClick={onToggleNotes}
-            className={`p-2 rounded transition-colors ${
-              showNotes 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-            }`}
-            title="Toggle Notes Panel"
-          >
-            <FileText className="w-4 h-4" />
-          </button>
-
-          {/* Code Visualization */}
-          <button
-            onClick={onVisualizeCode}
-            className="p-2 rounded bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
-            title="Visualize Code Structure"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
+            {/* Code Visualization */}
+            <button
+              onClick={onVisualizeCode}
+              className="btn btn-primary btn-sm"
+              title="Visualize Code Structure"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -195,15 +189,19 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
         {/* Notes Panel */}
         {showNotes && (
-          <div className="w-1/3 border-l border-gray-700 bg-gray-900 flex flex-col">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white flex items-center">
-                <FileText className="w-5 h-5 mr-2" />
-                Code Notes
-              </h3>
-              <p className="text-sm text-gray-400 mt-1">
+          <div className="w-1/3 border-l border-base-300 bg-base-200 flex flex-col">
+            <div className="navbar bg-base-300 min-h-14 px-4">
+              <div className="navbar-start">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Code Notes
+                </h3>
+              </div>
+            </div>
+            <div className="p-4 border-b border-base-300">
+              <div className="badge badge-outline">
                 {activeFile.name} - {activeFile.language}
-              </p>
+              </div>
             </div>
             <div className="flex-1 p-4">
               <textarea
@@ -216,38 +214,25 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 • Add // NOTE: in your code for inline notes
 • Document functions and classes
 • Track bugs and improvements"
-                className="w-full h-full min-h-[400px] p-3 bg-gray-800 text-white border border-gray-600 rounded resize-none focus:outline-none focus:border-blue-500 font-mono text-sm"
-                style={{ fontFamily: 'monospace' }}
+                className="textarea textarea-bordered w-full h-full min-h-[400px] font-mono text-sm"
               />
             </div>
-            <div className="p-4 border-t border-gray-700">
-              <div className="text-xs text-gray-500">
-                <p>💡 Use // NOTE: in your code for inline notes</p>
-                <p>📝 Notes are saved per file automatically</p>
+            <div className="p-4 border-t border-base-300">
+              <div className="space-y-1">
+                <div className="text-xs opacity-70 flex items-center">
+                  <span className="mr-2">💡</span>
+                  <span>Use // NOTE: in your code for inline notes</span>
+                </div>
+                <div className="text-xs opacity-70 flex items-center">
+                  <span className="mr-2">📝</span>
+                  <span>Notes are saved per file automatically</span>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* AI Suggestions Panel */}
-      {aiSuggestions.length > 0 && showAISuggestions && (
-        <div className="absolute bottom-4 right-4 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
-          <div className="p-3 border-b border-gray-600">
-            <h4 className="text-sm font-semibold text-white flex items-center">
-              <Lightbulb className="w-4 h-4 mr-2" />
-              AI Suggestions
-            </h4>
-          </div>
-          <div className="max-h-40 overflow-y-auto">
-            {aiSuggestions.map((suggestion, index) => (
-              <div key={index} className="p-3 border-b border-gray-700 last:border-b-0">
-                <p className="text-sm text-gray-300">{suggestion}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -372,6 +372,36 @@ const RoomContent = () => {
     setShowVisualization(false);
   }, []);
 
+  // Handle inserting AI suggestion into editor
+  const handleInsertAICode = useCallback((code: string) => {
+    if (!editorRef.current || !monacoRef.current) {
+      console.warn('Editor not available for code insertion');
+      return;
+    }
+
+    try {
+      const editor = editorRef.current;
+      const selection = editor.getSelection();
+      const range = selection || new monacoRef.current.Range(1, 1, 1, 1);
+      
+      // Insert the code at cursor position
+      editor.executeEdits('insert-ai-code', [{
+        range: range,
+        text: code,
+        forceMoveMarkers: true
+      }]);
+      
+      // Focus the editor
+      editor.focus();
+      
+      // Show success toast
+      toast.success('Code inserted successfully!');
+    } catch (error) {
+      console.error('Error inserting code:', error);
+      toast.error('Failed to insert code');
+    }
+  }, []);
+
   // Loading state - handled by RoomContext
   if (!isInitialized) {
     return (
@@ -467,6 +497,7 @@ const RoomContent = () => {
             aiLoading={aiLoading}
             aiError={aiError}
             onManualAITrigger={handleManualAITrigger}
+            onInsertCode={handleInsertAICode}
             isDebouncing={isDebouncing}
           />
         </div>
@@ -493,6 +524,8 @@ const RoomContent = () => {
               onEditorChange={handleEditorChange}
               onEditorDidMount={handleEditorDidMount}
               aiSuggestions={aiInlineSuggestions}
+              aiResponse={aiResponse}
+              onInsertCode={handleInsertAICode}
               onVisualizeCode={handleVisualizeCode}
               onToggleNotes={handleToggleNotes}
               showNotes={showNotes}

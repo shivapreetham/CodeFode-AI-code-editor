@@ -69,7 +69,7 @@ export const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://your-production-domain.com' // Replace with actual domain
+      'https://.com' // Replace with actual domain
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1) {

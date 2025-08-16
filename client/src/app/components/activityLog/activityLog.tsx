@@ -79,19 +79,19 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
   );
 
   return (
-    <div className="h-screen bg-[#2d2a2a]  flex flex-col text-green-400">
-      <div className="p-4 border-b border-[#4e4b4b] flex justify-between items-center">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Activity Log</h2>
-        <div className="flex gap-2">
+        <div className="join">
           <button 
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="p-2 hover:bg-[#3d3a3a] rounded"
+            className="btn btn-ghost btn-sm join-item"
           >
             <FilterIcon className="w-4 h-4" />
           </button>
           <button 
             onClick={onRefresh}
-            className="p-2 hover:bg-[#3d3a3a] rounded"
+            className="btn btn-ghost btn-sm join-item"
           >
             <RefreshCwIcon className="w-4 h-4" />
           </button>
@@ -99,55 +99,59 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
       </div>
 
       {isFilterOpen && (
-        <div className="p-4 border-b border-[#4e4b4b] flex flex-wrap gap-2">
-          {['ALL', 'FILE', 'FOLDER', 'USER', 'CODE'].map(filterType => (
-            <button
-              key={filterType}
-              onClick={() => setFilter(filterType)}
-              className={`px-3 py-1 rounded ${
-                filter === filterType 
-                  ? 'bg-[#ffe200] text-black' 
-                  : 'bg-[#3d3a3a] text-white'
-              }`}
-            >
-              {filterType}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2">
+          <div className="join">
+            {['ALL', 'FILE', 'FOLDER', 'USER', 'CODE'].map(filterType => (
+              <button
+                key={filterType}
+                onClick={() => setFilter(filterType)}
+                className={`btn btn-sm join-item ${
+                  filter === filterType 
+                    ? 'btn-primary' 
+                    : 'btn-outline'
+                }`}
+              >
+                {filterType}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="space-y-2">
         {filteredNotifications.length > 0 ? (
-          <div className="divide-y divide-[#4e4b4b]">
+          <>
             {filteredNotifications.map((notification) => (
               <div 
                 key={notification._id} 
-                className="p-4 hover:bg-[#3d3a3a] transition-colors"
+                className="card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
               >
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 ${getColor(notification.type)}`}>
-                    {getIcon(notification.type)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm">{notification.message}</p>
-                    <div className="flex gap-2 mt-1 text-xs text-gray-400">
-                      <span>by {notification.username}</span>
-                      <span>•</span>
-                      <span>{new Date(notification.timestamp).toLocaleString()}</span>
+                <div className="card-body p-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-1 ${getColor(notification.type)}`}>
+                      {getIcon(notification.type)}
                     </div>
-                    {notification.metadata?.path && (
-                      <p className="mt-1 text-xs text-gray-400">
-                        Path: {notification.metadata.path}
-                      </p>
-                    )}
+                    <div className="flex-1">
+                      <p className="text-sm">{notification.message}</p>
+                      <div className="flex gap-2 mt-1 text-xs opacity-70">
+                        <span>by {notification.username}</span>
+                        <span>•</span>
+                        <span>{new Date(notification.timestamp).toLocaleString()}</span>
+                      </div>
+                      {notification.metadata?.path && (
+                        <p className="mt-1 text-xs opacity-70">
+                          Path: {notification.metadata.path}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
-          </div>
+          </>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            No activities to show
+          <div className="alert">
+            <span>No activities to show</span>
           </div>
         )}
       </div>

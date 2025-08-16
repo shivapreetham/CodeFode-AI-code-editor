@@ -35,6 +35,7 @@ interface SidebarPanelProps {
   aiLoading: boolean;
   aiError: string | null;
   onManualAITrigger?: () => void;
+  onInsertCode?: (code: string) => void;
   isDebouncing?: boolean;
 }
 
@@ -70,19 +71,22 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
   aiLoading,
   aiError,
   onManualAITrigger,
+  onInsertCode,
   isDebouncing
 }) => {
-  if (isCollapsed) return null;
-
   return (
-    <>
+    <div className="flex flex-col h-full">
       {/* Sidebar Header */}
-      <div className="sidebar-header">
-        {tabLabels[activeTab as keyof typeof tabLabels] || "Panel"}
+      <div className="navbar bg-base-200 min-h-14 px-4 border-b border-base-300 flex-shrink-0">
+        <div className="navbar-start">
+          <h2 className="text-lg font-semibold text-base-content">
+            {tabLabels[activeTab as keyof typeof tabLabels] || "Panel"}
+          </h2>
+        </div>
       </div>
 
       {/* Sidebar Content */}
-      <div className="sidebar-content">
+      <div className="flex-1 overflow-y-auto bg-base-200">
         {activeTab === 0 && (
           <FileExplorer
             fileExplorerData={fileExplorerData}
@@ -103,13 +107,13 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
         )}
         
         {activeTab === 1 && (
-          <div className="panel-content">
+          <div className="p-4">
             <Peoples clients={clients} roomId={roomId} />
           </div>
         )}
         
         {activeTab === 2 && username && roomId && (
-          <div className="panel-content">
+          <div className="p-4">
             <Chat
               socket={socket?.current}
               username={username}
@@ -119,26 +123,27 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
         )}
         
         {activeTab === 3 && (
-          <div className="panel-content">
+          <div className="p-4">
             <ThemeSwitcher />
           </div>
         )}
         
         {activeTab === 4 && (
-          <div className="panel-content">
+          <div className="p-4">
             <AiSuggestionSidebar
               isOpen={true}
               aiResponse={aiResponse}
               isLoading={aiLoading}
               error={aiError}
               onManualTrigger={onManualAITrigger}
+              onInsertCode={onInsertCode}
               isDebouncing={isDebouncing}
             />
           </div>
         )}
         
         {activeTab === 5 && (
-          <div className="panel-content">
+          <div className="p-4">
             <ActivityLog
               notifications={notifications}
               onRefresh={onRefreshNotifications}
@@ -146,7 +151,7 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

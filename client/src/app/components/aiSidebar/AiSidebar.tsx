@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Bug, Lightbulb, Code, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
+import { Sparkles, Bug, Lightbulb, Code, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
 import CodeBlock from './codeBlock';
 
 interface Error {
@@ -39,6 +39,7 @@ interface AISuggestionsSidebarProps {
   isLoading: boolean;
   error?: string | null;
   onManualTrigger?: () => void;
+  onInsertCode?: (code: string) => void;
   isDebouncing?: boolean;
 }
 
@@ -63,6 +64,7 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
   isLoading,
   error,
   onManualTrigger,
+  onInsertCode,
   isDebouncing
 }) => {
   if (aiResponse) {
@@ -96,67 +98,61 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
     isExpanded, 
     onToggle 
   }) => (
-    <div className="mb-4 bg-zinc-800/50 rounded-lg overflow-hidden">
-      <button
-        onClick={onToggle}
-        className={`w-full p-3 flex items-center justify-between text-left
-          ${type === 'error' ? 'bg-red-900/20' : ''}
-          ${type === 'suggestion' ? 'bg-blue-900/20' : ''}
-          ${type === 'practice' ? 'bg-emerald-900/20' : ''}`}
+    <div className="collapse collapse-arrow bg-base-200 mb-4">
+      <input type="checkbox" checked={isExpanded} onChange={onToggle} />
+      <div className={`collapse-title text-xl font-medium flex items-center gap-2
+        ${type === 'error' ? 'border-l-4 border-error' : ''}
+        ${type === 'suggestion' ? 'border-l-4 border-info' : ''}
+        ${type === 'practice' ? 'border-l-4 border-success' : ''}`}
       >
-        <div className="flex items-center gap-2">
-          <Icon className={`w-5 h-5 
-            ${type === 'error' ? 'text-red-400' : ''}
-            ${type === 'suggestion' ? 'text-blue-400' : ''}
-            ${type === 'practice' ? 'text-emerald-400' : ''}`} 
-          />
-          <span className="font-medium text-zinc-100">{title}</span>
-        </div>
-        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
-      {isExpanded && (
-        <div className="p-3 space-y-3">
+        <Icon className={`w-5 h-5 
+          ${type === 'error' ? 'text-error' : ''}
+          ${type === 'suggestion' ? 'text-info' : ''}
+          ${type === 'practice' ? 'text-success' : ''}`} 
+        />
+        <span>{title}</span>
+      </div>
+      <div className="collapse-content">
+        <div className="space-y-3">
           {children}
         </div>
-      )}
+      </div>
     </div>
   );
 
   return (
-    <div className="w-full md:w-[20rem] lg:w-[25rem] h-screen bg-zinc-900 border-l border-zinc-800 overflow-y-auto transition-all duration-300">
-      <div className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-green-400">
-            <Sparkles className="w-5 h-5" />
-            <h2 className="text-lg font-semibold">AI Code Analysis</h2>
-          </div>
-          {onManualTrigger && (
-            <button
-              onClick={onManualTrigger}
-              disabled={isLoading}
-              className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-sm rounded transition-colors"
-            >
-              {isLoading ? 'Analyzing...' : 'Analyze Now'}
-            </button>
-          )}
+    <div className="panel-content">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5" />
+          <h2 className="text-lg font-semibold">AI Code Analysis</h2>
         </div>
+        {onManualTrigger && (
+          <button
+            onClick={onManualTrigger}
+            disabled={isLoading}
+            className={`btn btn-primary btn-sm ${isLoading ? 'loading' : ''}`}
+          >
+            {isLoading ? 'Analyzing...' : 'Analyze Now'}
+          </button>
+        )}
       </div>
 
-      <div className="p-4 max-w-full">
+      <div className="max-w-full">
         {error ? (
-          <div className="flex flex-col items-center justify-center p-8 space-y-3 text-red-400">
-            <Bug className="w-8 h-8" />
-            <p>{error}</p>
+          <div className="alert alert-error">
+            <Bug className="w-6 h-6" />
+            <span>{error}</span>
           </div>
         ) : isLoading ? (
           <div className="flex flex-col items-center justify-center p-8 space-y-4">
-            <div className="w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-            <p className="text-zinc-400">Analyzing your code...</p>
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <p>Analyzing your code...</p>
           </div>
         ) : isDebouncing ? (
           <div className="flex flex-col items-center justify-center p-8 space-y-4">
-            <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
-            <p className="text-zinc-400">Preparing analysis...</p>
+            <span className="loading loading-spinner loading-lg text-secondary"></span>
+            <p>Preparing analysis...</p>
           </div>
         ) : aiResponse ? (
           <div className="space-y-6">
@@ -174,11 +170,20 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
                     <p className="text-sm text-zinc-400">Line: {error.line}</p>
                     <div className="space-y-1">
                       <p className="text-sm text-zinc-300">{error.description}</p>
-                      <div className="bg-red-900/20 p-2 rounded">
+                      <div className="bg-red-900/20 p-2 rounded border border-red-500/30">
                         <p className="text-sm text-red-400 font-mono">{error.code}</p>
                       </div>
-                      <div className="bg-emerald-900/20 p-2 rounded">
-                        <p className="text-sm text-emerald-400 font-mono">{error.fixedCode}</p>
+                      <div className="bg-green-900/20 p-2 rounded border border-green-500/30 relative">
+                        <p className="text-sm text-green-400 font-mono">{error.fixedCode}</p>
+                        {onInsertCode && (
+                          <button
+                            onClick={() => onInsertCode(error.fixedCode)}
+                            className="btn btn-success btn-xs absolute top-2 right-2"
+                            title="Insert this code"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -196,7 +201,19 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
               >
                 {aiResponse.suggestions.map((suggestion, idx) => (
                   <div key={idx} className="space-y-2">
-                    <h4 className="text-blue-400 font-medium">{suggestion.title}</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-blue-400 font-medium">{suggestion.title}</h4>
+                      {onInsertCode && suggestion.code && (
+                        <button
+                          onClick={() => onInsertCode(suggestion.code)}
+                          className="btn btn-info btn-xs"
+                          title="Insert this code"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Insert
+                        </button>
+                      )}
+                    </div>
                     <CodeBlock code={suggestion.code} />
                     <p className="text-sm text-zinc-300">{suggestion.explanation}</p>
                   </div>
@@ -214,7 +231,19 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
               >
                 {aiResponse.bestPractices.map((practice, idx) => (
                   <div key={idx} className="space-y-2">
-                    <h4 className="text-emerald-400 font-medium">{practice.title}</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-green-400 font-medium">{practice.title}</h4>
+                      {onInsertCode && practice.code && (
+                        <button
+                          onClick={() => onInsertCode(practice.code)}
+                          className="btn btn-success btn-xs"
+                          title="Insert this code"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Insert
+                        </button>
+                      )}
+                    </div>
                     <CodeBlock code={practice.code} />
                     <p className="text-sm text-zinc-300">{practice.explanation}</p>
                   </div>

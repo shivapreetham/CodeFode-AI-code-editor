@@ -186,11 +186,6 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
     canvas.on('object:added', handleObjectAdded);
     canvas.on('mouse:move', handleMouseMove);
 
-    // Load existing whiteboard data
-    if (socket) {
-      socket.emit(ACTIONS.WHITEBOARD_LOAD, { roomId });
-    }
-
     return () => {
       // Clean up event listeners
       canvas.off('path:created', handlePathCreated);
@@ -198,6 +193,26 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
       canvas.off('mouse:move', handleMouseMove);
     };
   }, [socket, roomId, username, selectedTool, isActive, isReady]);
+
+  // Load whiteboard data when socket and canvas are ready
+  useEffect(() => {
+    if (!socket || !isReady || !roomId) return;
+
+    console.log('🎨 Loading whiteboard data for room:', roomId);
+    
+    // Request whiteboard data from server
+    socket.emit(ACTIONS.WHITEBOARD_LOAD, { roomId });
+    
+    // Set timeout to stop loading even if no response
+    const loadTimeout = setTimeout(() => {
+      console.log('⚠️ Whiteboard load timeout - proceeding with empty canvas');
+      setIsLoading(false);
+    }, 5000);
+
+    return () => {
+      clearTimeout(loadTimeout);
+    };
+  }, [socket, roomId, isReady]);
 
   // Handle incoming collaborative events
   useEffect(() => {
@@ -247,12 +262,45 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
       }
     };
 
+    const handleWhiteboardLoad = (data: any) => {
+      try {
+        console.log('🎨 Received whiteboard data:', data);
+        
+        preventBroadcast.current = true;
+        
+        // Clear canvas first
+        canvas.clear();
+        canvas.backgroundColor = '#ffffff';
+        
+        // Load canvas data if it exists
+        if (data.canvasData) {
+          canvas.loadFromJSON(data.canvasData, () => {
+            canvas.renderAll();
+            preventBroadcast.current = false;
+            setIsLoading(false);
+            console.log('✅ Whiteboard loaded successfully');
+          });
+        } else {
+          canvas.renderAll();
+          preventBroadcast.current = false;
+          setIsLoading(false);
+          console.log('✅ Empty whiteboard loaded');
+        }
+      } catch (error) {
+        console.error('❌ Error loading whiteboard:', error);
+        preventBroadcast.current = false;
+        setIsLoading(false);
+      }
+    };
+
     socket.on(ACTIONS.WHITEBOARD_DRAW, handleRemoteWhiteboardDraw);
     socket.on(ACTIONS.WHITEBOARD_CLEAR, handleRemoteWhiteboardClear);
+    socket.on(ACTIONS.WHITEBOARD_LOAD, handleWhiteboardLoad);
 
     return () => {
       socket.off(ACTIONS.WHITEBOARD_DRAW, handleRemoteWhiteboardDraw);
       socket.off(ACTIONS.WHITEBOARD_CLEAR, handleRemoteWhiteboardClear);
+      socket.off(ACTIONS.WHITEBOARD_LOAD, handleWhiteboardLoad);
     };
   }, [socket, username, isReady]);
 

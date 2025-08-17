@@ -92,10 +92,10 @@ const AiChatPanel: React.FC<AiChatPanelProps> = ({
         
         <div className={`chat-bubble max-w-md ${
           message.isUser 
-            ? 'chat-bubble-primary' 
+            ? 'bg-primary text-primary-content' 
             : message.message.includes('Error:') 
-              ? 'chat-bubble-error' 
-              : 'chat-bubble-secondary'
+              ? 'bg-error text-error-content' 
+              : 'bg-base-300 text-base-content'
         }`}>
           <div className="space-y-2">
             {parts.map((part, index) => (

@@ -678,18 +678,55 @@ export const handleWhiteboardLoad = (socket, userRoomMap) => {
         return;
       }
 
+      console.log(`🎨 Loading whiteboard data for room: ${roomId}`);
+
       // Load whiteboard data
-      const whiteboard = await Whiteboard.findByRoomId(roomId);
+      let whiteboard;
+      try {
+        whiteboard = await Whiteboard.findByRoomId(roomId);
+      } catch (dbError) {
+        console.error('Database error loading whiteboard:', dbError);
+        // Send empty response to prevent infinite loading
+        socket.emit(ACTIONS.WHITEBOARD_LOAD, {
+          canvasData: null,
+          metadata: null,
+          error: 'Database connection issue'
+        });
+        return;
+      }
       
-      socket.emit(ACTIONS.WHITEBOARD_LOAD, {
+      const responseData = {
         canvasData: whiteboard?.canvasData || null,
-        metadata: whiteboard?.metadata || null
+        metadata: whiteboard?.metadata || {
+          width: 1200,
+          height: 800,
+          background: '#ffffff'
+        }
+      };
+
+      console.log(`✅ Whiteboard data loaded for room ${roomId}:`, {
+        hasCanvas: !!responseData.canvasData,
+        metadata: responseData.metadata
       });
+
+      socket.emit(ACTIONS.WHITEBOARD_LOAD, responseData);
 
       logSocketEvent(ACTIONS.WHITEBOARD_LOAD, socket.id, { roomId });
 
     } catch (error) {
+      console.error('Whiteboard load error', { socketId: socket.id, error: error.message });
       logger.error('Whiteboard load error', { socketId: socket.id, error: error.message });
+      
+      // Always send a response to prevent infinite loading
+      socket.emit(ACTIONS.WHITEBOARD_LOAD, {
+        canvasData: null,
+        metadata: {
+          width: 1200,
+          height: 800,
+          background: '#ffffff'
+        },
+        error: 'Failed to load whiteboard'
+      });
     }
   };
 };

@@ -22,6 +22,25 @@ const filesContentSchema = new mongoose.Schema({
   file: fileSchema
 });
 
+const notesSchema = new mongoose.Schema({
+  filePath: {
+    type: String,
+    required: true
+  },
+  content: {
+    type: String,
+    default: ''
+  },
+  lastModified: {
+    type: Date,
+    default: Date.now
+  },
+  modifiedBy: {
+    type: String,
+    required: true
+  }
+});
+
 const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
@@ -68,6 +87,7 @@ const workspaceSchema = new mongoose.Schema({
   openFiles: [fileSchema],
   activeFile: fileSchema,
   filesContent: [filesContentSchema],
+  notes: [notesSchema],
   notifications: [notificationSchema],
   lastUpdated: {
     type: Date,

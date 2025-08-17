@@ -65,6 +65,7 @@ const RoomContent = () => {
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [showWidthIndicator, setShowWidthIndicator] = useState(false);
 
   // Room state management using centralized context
   const {
@@ -307,6 +308,7 @@ const RoomContent = () => {
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
+    setShowWidthIndicator(true);
     setStartX(e.clientX);
     setStartWidth(sidebarWidth);
   }, [sidebarWidth]);
@@ -316,12 +318,14 @@ const RoomContent = () => {
     e.preventDefault();
     
     const deltaX = e.clientX - startX;
-    const newWidth = Math.max(200, Math.min(600, startWidth + deltaX)); // Min 200px, Max 600px
+    const maxWidth = Math.floor(window.innerWidth * 0.7); // Allow up to 70% of screen width
+    const newWidth = Math.max(200, Math.min(maxWidth, startWidth + deltaX)); // Min 200px, Max 70% of screen
     setSidebarWidth(newWidth);
   }, [isResizing, startX, startWidth, setSidebarWidth]);
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
+    setShowWidthIndicator(false);
   }, []);
 
   // Add global mouse event listeners for resize
@@ -330,14 +334,45 @@ const RoomContent = () => {
       document.addEventListener('mousemove', handleResizeMove);
       document.addEventListener('mouseup', handleResizeEnd);
       document.body.classList.add('resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
       
       return () => {
         document.removeEventListener('mousemove', handleResizeMove);
         document.removeEventListener('mouseup', handleResizeEnd);
         document.body.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
       };
     }
   }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+  // Keyboard shortcuts for sidebar resize
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Shift + [ to decrease sidebar width
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '[' && !isCollapsed) {
+        e.preventDefault();
+        const newWidth = Math.max(200, sidebarWidth - 50);
+        setSidebarWidth(newWidth);
+      }
+      // Ctrl/Cmd + Shift + ] to increase sidebar width
+      else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === ']' && !isCollapsed) {
+        e.preventDefault();
+        const maxWidth = Math.floor(window.innerWidth * 0.7);
+        const newWidth = Math.min(maxWidth, sidebarWidth + 50);
+        setSidebarWidth(newWidth);
+      }
+      // Ctrl/Cmd + Shift + 0 to reset to default width
+      else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '0' && !isCollapsed) {
+        e.preventDefault();
+        setSidebarWidth(350);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarWidth, setSidebarWidth, isCollapsed]);
 
   // Check if mobile device
   useEffect(() => {
@@ -404,10 +439,25 @@ const RoomContent = () => {
     }
   }, [aiResponse]);
 
-  // Add demo note when notes panel is first opened
+  // Load notes from backend when notes panel is opened or file changes
   useEffect(() => {
-    if (showNotes && !notes.has(activeFile?.path || '')) {
-      setNotes(prev => new Map(prev).set(activeFile?.path || '', `# Code Notes for ${activeFile?.name || 'Current File'}
+    if (showNotes && activeFile?.path) {
+      loadNotesFromBackend(activeFile.path);
+    }
+  }, [showNotes, activeFile?.path]);
+
+  const loadNotesFromBackend = async (filePath: string) => {
+    try {
+      const { notesApi } = await import('@/services/notesApi');
+      const response = await notesApi.getNotes(roomId, filePath);
+      if (response.success) {
+        setNotes(prev => new Map(prev).set(filePath, response.data.content || ''));
+      }
+    } catch (error) {
+      console.error('Failed to load notes:', error);
+      // Set default content on error
+      if (!notes.has(filePath)) {
+        setNotes(prev => new Map(prev).set(filePath, `# Code Notes for ${activeFile?.name || 'Current File'}
 
 ## 📝 How to use inline notes:
 - Add // NOTE: your note here to any line
@@ -419,17 +469,13 @@ const RoomContent = () => {
 - Click the sparkles button to toggle AI suggestions
 - Use the "Analyze Now" button for instant AI analysis
 
-## 📊 Visualization:
-- Click the eye button to see code structure
-- View file dependencies and function hierarchies
-- Analyze import/export relationships
-
 ## 💡 Tips:
 - Use the notes panel for detailed documentation
 - Combine AI suggestions with your own notes
-- Visualize your code to understand structure better`));
+- Notes are automatically saved to the backend`));
+      }
     }
-  }, [showNotes, notes, activeFile?.name, activeFile?.path]);
+  };
 
   // Handle AI suggestions when AI tab is active
   useEffect(() => {
@@ -480,10 +526,29 @@ const RoomContent = () => {
     setShowNotes(!showNotes);
   }, [showNotes]);
 
-  // Handle notes change
-  const handleNotesChange = useCallback((newNotes: string) => {
-    setNotes(prev => new Map(prev).set(activeFile?.path || '', newNotes));
-  }, [activeFile?.path]);
+  // Handle notes change with backend save
+  const handleNotesChange = useCallback(async (newNotes: string) => {
+    const filePath = activeFile?.path || '';
+    setNotes(prev => new Map(prev).set(filePath, newNotes));
+    
+    // Debounced save to backend
+    if (noteSaveTimeoutRef.current) {
+      clearTimeout(noteSaveTimeoutRef.current);
+    }
+    
+    noteSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (username && filePath) {
+          const { notesApi } = await import('@/services/notesApi');
+          await notesApi.saveNotes(roomId, filePath, newNotes, username);
+        }
+      } catch (error) {
+        console.error('Failed to save notes:', error);
+      }
+    }, 1000); // Save after 1 second of no typing
+  }, [activeFile?.path, roomId, username]);
+  
+  const noteSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle code visualization
   const handleVisualizeCode = useCallback(() => {
@@ -712,26 +777,88 @@ const RoomContent = () => {
         {/* Resize Handle */}
         {!isCollapsed && !isMobile && (
           <div
-            className="resize-handle"
+            className={`resize-handle ${isResizing ? 'resizing' : ''}`}
             onMouseDown={handleResizeStart}
+            onDoubleClick={() => setSidebarWidth(350)}
+            title="Drag to resize • Double-click to reset • Ctrl+Shift+[/] to adjust"
             style={{
-              width: '4px',
+              width: isResizing ? '8px' : '6px',
               cursor: 'col-resize',
-              backgroundColor: 'hsl(var(--b3))',
-              borderLeft: '1px solid hsl(var(--b3))',
-              borderRight: '1px solid hsl(var(--b3))',
+              backgroundColor: isResizing ? 'hsl(var(--primary))' : 'hsl(var(--b3))',
+              borderLeft: '1px solid hsl(var(--b2))',
+              borderRight: '1px solid hsl(var(--b2))',
               position: 'relative',
               zIndex: 10,
               minHeight: '100vh',
-              transition: 'background-color 0.2s ease'
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+              if (!isResizing) {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--primary) / 0.5)';
+                e.currentTarget.style.width = '8px';
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'hsl(var(--b3))';
+              if (!isResizing) {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--b3))';
+                e.currentTarget.style.width = '6px';
+              }
             }}
-          />
+          >
+            {/* Drag indicator dots */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px',
+              opacity: 0.6
+            }}>
+              <div style={{
+                width: '2px',
+                height: '2px',
+                backgroundColor: 'hsl(var(--bc))',
+                borderRadius: '50%'
+              }} />
+              <div style={{
+                width: '2px',
+                height: '2px',
+                backgroundColor: 'hsl(var(--bc))',
+                borderRadius: '50%'
+              }} />
+              <div style={{
+                width: '2px',
+                height: '2px',
+                backgroundColor: 'hsl(var(--bc))',
+                borderRadius: '50%'
+              }} />
+            </div>
+          </div>
+        )}
+
+        {/* Width Indicator */}
+        {showWidthIndicator && (
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: `${sidebarWidth + 20}px`,
+              transform: 'translateY(-50%)',
+              backgroundColor: 'hsl(var(--b1))',
+              border: '1px solid hsl(var(--b3))',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              fontSize: '12px',
+              fontWeight: '500',
+              color: 'hsl(var(--bc))',
+              zIndex: 1000,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              pointerEvents: 'none'
+            }}
+          >
+            {sidebarWidth}px ({Math.round((sidebarWidth / window.innerWidth) * 100)}%)
+          </div>
         )}
 
         {/* Main Editor Area */}

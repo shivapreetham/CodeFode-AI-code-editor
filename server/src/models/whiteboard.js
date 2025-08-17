@@ -7,8 +7,35 @@ const whiteboardSchema = new mongoose.Schema({
     index: true
   },
   canvasData: {
-    type: mongoose.Schema.Types.Mixed, // Fabric.js canvas JSON
-    default: null
+    paths: [{
+      id: String,
+      points: [{
+        x: Number,
+        y: Number,
+        pressure: Number
+      }],
+      color: String,
+      size: Number,
+      tool: String,
+      timestamp: Number
+    }],
+    shapes: [{
+      id: String,
+      type: String,
+      x: Number,
+      y: Number,
+      width: Number,
+      height: Number,
+      radius: Number,
+      text: String,
+      color: String,
+      strokeWidth: Number,
+      timestamp: Number
+    }],
+    background: {
+      type: String,
+      default: '#ffffff'
+    }
   },
   lastModified: {
     type: Date,
@@ -43,6 +70,13 @@ const whiteboardSchema = new mongoose.Schema({
       type: String,
       enum: ['read', 'write', 'admin'],
       default: 'write'
+    },
+    cursor: {
+      x: Number,
+      y: Number,
+      lastUpdate: Date,
+      isDrawing: Boolean,
+      color: String
     }
   }]
 }, {

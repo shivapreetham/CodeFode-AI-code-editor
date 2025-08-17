@@ -151,3 +151,103 @@ export const listWorkspaces = asyncHandler(async (req, res) => {
   
   return successResponse(res, workspaces, 'Workspaces retrieved successfully');
 });
+
+// Notes endpoints
+export const saveNotes = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  const { filePath, content, username } = req.body;
+  
+  logger.info('Notes save request', { roomId, filePath, username });
+  
+  if (!filePath || !username) {
+    throw new ValidationError('filePath and username are required');
+  }
+  
+  const workspace = await Workspace.findOne({ roomId });
+  
+  if (!workspace) {
+    throw new NotFoundError('Workspace not found');
+  }
+  
+  // Find existing note or create new one
+  const existingNoteIndex = workspace.notes.findIndex(note => note.filePath === filePath);
+  
+  if (existingNoteIndex >= 0) {
+    workspace.notes[existingNoteIndex].content = content;
+    workspace.notes[existingNoteIndex].lastModified = new Date();
+    workspace.notes[existingNoteIndex].modifiedBy = username;
+  } else {
+    workspace.notes.push({
+      filePath,
+      content,
+      lastModified: new Date(),
+      modifiedBy: username
+    });
+  }
+  
+  workspace.lastUpdated = new Date();
+  await workspace.save();
+  
+  logger.info('Notes saved successfully', { roomId, filePath, username });
+  
+  return successResponse(res, workspace.notes.find(note => note.filePath === filePath), 'Notes saved successfully');
+});
+
+export const getNotes = asyncHandler(async (req, res) => {
+  const { roomId, filePath } = req.params;
+  
+  logger.info('Notes retrieval request', { roomId, filePath });
+  
+  const workspace = await Workspace.findOne({ roomId });
+  
+  if (!workspace) {
+    throw new NotFoundError('Workspace not found');
+  }
+  
+  const note = workspace.notes.find(note => note.filePath === filePath);
+  
+  if (!note) {
+    return successResponse(res, { filePath, content: '', lastModified: null, modifiedBy: null }, 'No notes found for this file');
+  }
+  
+  logger.info('Notes retrieved successfully', { roomId, filePath });
+  
+  return successResponse(res, note, 'Notes retrieved successfully');
+});
+
+export const getAllNotes = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  
+  logger.info('All notes retrieval request', { roomId });
+  
+  const workspace = await Workspace.findOne({ roomId });
+  
+  if (!workspace) {
+    throw new NotFoundError('Workspace not found');
+  }
+  
+  logger.info('All notes retrieved successfully', { roomId, notesCount: workspace.notes.length });
+  
+  return successResponse(res, workspace.notes, 'All notes retrieved successfully');
+});
+
+export const deleteNotes = asyncHandler(async (req, res) => {
+  const { roomId, filePath } = req.params;
+  const { username } = req.body;
+  
+  logger.info('Notes deletion request', { roomId, filePath, username });
+  
+  const workspace = await Workspace.findOne({ roomId });
+  
+  if (!workspace) {
+    throw new NotFoundError('Workspace not found');
+  }
+  
+  workspace.notes = workspace.notes.filter(note => note.filePath !== filePath);
+  workspace.lastUpdated = new Date();
+  await workspace.save();
+  
+  logger.info('Notes deleted successfully', { roomId, filePath, username });
+  
+  return successResponse(res, null, 'Notes deleted successfully');
+});

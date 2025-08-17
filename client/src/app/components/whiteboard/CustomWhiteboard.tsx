@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { getStroke } from 'perfect-freehand';
+import axios from 'axios';
 import {
   Pen,
   Eraser,
@@ -48,6 +49,15 @@ interface Shape {
 
 type DrawingTool = 'pen' | 'eraser' | 'rectangle' | 'circle' | 'text' | 'select';
 
+interface UserCursor {
+  username: string;
+  x: number;
+  y: number;
+  isDrawing: boolean;
+  color: string;
+  lastUpdate: number;
+}
+
 interface WhiteboardProps {
   roomId: string;
   username: string;
@@ -76,12 +86,113 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragStart, setDragStart] = useState<Point | null>(null);
   const [tempShape, setTempShape] = useState<Shape | null>(null);
+  const [userCursors, setUserCursors] = useState<Map<string, UserCursor>>(new Map());
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsClient(true);
+    loadWhiteboard();
+  }, []);
+
+  // Backend integration functions
+  const loadWhiteboard = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`/api/whiteboard/${roomId}`);
+      if (response.data.success && response.data.data.canvasData) {
+        const { paths, shapes } = response.data.data.canvasData;
+        if (paths) setPaths(paths);
+        if (shapes) setShapes(shapes);
+      }
+    } catch (error) {
+      console.error('Failed to load whiteboard:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveWhiteboard = async () => {
+    try {
+      const canvasData = {
+        paths,
+        shapes,
+        background: '#ffffff'
+      };
+      
+      await axios.post(`/api/whiteboard/${roomId}`, {
+        canvasData,
+        username,
+        metadata: {
+          width: canvasRef.current?.width || 800,
+          height: canvasRef.current?.height || 600
+        }
+      });
+      
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Failed to save whiteboard:', error);
+    }
+  };
+
+  const debouncedSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      saveWhiteboard();
+    }, 2000); // Save after 2 seconds of inactivity
+  }, [paths, shapes, roomId, username]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (paths.length > 0 || shapes.length > 0) {
+      debouncedSave();
+    }
+  }, [paths, shapes, debouncedSave]);
+
+  // Cursor tracking
+  const sendCursorUpdate = useCallback((x: number, y: number, isDrawing: boolean) => {
+    if (socket) {
+      socket.emit('cursor-update', {
+        roomId,
+        username,
+        x,
+        y,
+        isDrawing,
+        color: strokeColor,
+        timestamp: Date.now()
+      });
+    }
+  }, [socket, roomId, username, strokeColor]);
+
+  const drawUserCursor = useCallback((ctx: CanvasRenderingContext2D, cursor: UserCursor) => {
+    ctx.save();
+    
+    // Draw cursor circle
+    ctx.beginPath();
+    ctx.arc(cursor.x, cursor.y, cursor.isDrawing ? 8 : 5, 0, 2 * Math.PI);
+    ctx.fillStyle = cursor.color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw username label
+    ctx.font = '12px Arial';
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(cursor.x + 10, cursor.y - 20, ctx.measureText(cursor.username).width + 8, 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(cursor.username, cursor.x + 14, cursor.y - 8);
+    
+    ctx.restore();
   }, []);
 
   const saveToHistory = useCallback(() => {
@@ -193,7 +304,16 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
     }
 
     ctx.restore();
-  }, [zoom, pan, paths, shapes, currentPath, strokeColor, strokeWidth, selectedTool, tempShape, drawPath, drawShape]);
+
+    // Draw user cursors (after restore so they're not affected by zoom/pan)
+    userCursors.forEach((cursor) => {
+      if (cursor.username !== username && Date.now() - cursor.lastUpdate < 10000) { // Show cursors for 10 seconds
+        const screenX = cursor.x * zoom + pan.x;
+        const screenY = cursor.y * zoom + pan.y;
+        drawUserCursor(ctx, { ...cursor, x: screenX, y: screenY });
+      }
+    });
+  }, [zoom, pan, paths, shapes, currentPath, strokeColor, strokeWidth, selectedTool, tempShape, drawPath, drawShape, userCursors, username, drawUserCursor]);
 
   useEffect(() => {
     if (!isClient || !canvasRef.current || !containerRef.current) return;
@@ -232,6 +352,7 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
     if (!canvasRef.current) return;
 
     const point = getPointFromEvent(e);
+    sendCursorUpdate(point.x, point.y, true);
 
     if (selectedTool === 'select') {
       setDragStart(point);
@@ -270,9 +391,12 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDrawing || !canvasRef.current) return;
+    if (!canvasRef.current) return;
 
     const point = getPointFromEvent(e);
+    sendCursorUpdate(point.x, point.y, isDrawing);
+
+    if (!isDrawing) return;
 
     if (selectedTool === 'pen' || selectedTool === 'eraser') {
       setCurrentPath(prev => [...prev, point]);
@@ -309,6 +433,8 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
 
   const handleMouseUp = () => {
     if (!isDrawing) return;
+    
+    sendCursorUpdate(0, 0, false);
 
     if (selectedTool === 'pen' || selectedTool === 'eraser') {
       if (currentPath.length > 0) {
@@ -369,16 +495,162 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
     }
   };
 
-  const exportCanvas = () => {
+  const exportCanvas = (format: 'png' | 'jpg' | 'svg' | 'json' = 'png') => {
     if (!canvasRef.current) return;
 
-    const dataURL = canvasRef.current.toDataURL('image/png');
+    switch (format) {
+      case 'png':
+      case 'jpg':
+        const dataURL = canvasRef.current.toDataURL(`image/${format}`);
+        const link = document.createElement('a');
+        link.download = `whiteboard-${roomId}-${Date.now()}.${format}`;
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        break;
+
+      case 'svg':
+        exportAsSVG();
+        break;
+
+      case 'json':
+        exportAsJSON();
+        break;
+
+      default:
+        exportCanvas('png');
+    }
+  };
+
+  const exportAsSVG = () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    svg.setAttribute('width', canvas.width.toString());
+    svg.setAttribute('height', canvas.height.toString());
+    svg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+
+    // Add white background
+    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    background.setAttribute('width', '100%');
+    background.setAttribute('height', '100%');
+    background.setAttribute('fill', 'white');
+    svg.appendChild(background);
+
+    // Convert paths to SVG paths
+    paths.forEach(path => {
+      if (path.points.length < 2) return;
+      
+      const stroke = getStroke(path.points, {
+        size: path.size,
+        thinning: 0.5,
+        smoothing: 0.5,
+        streamline: 0.5,
+      });
+
+      if (stroke.length > 0) {
+        const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        let d = `M ${stroke[0][0]} ${stroke[0][1]}`;
+        for (let i = 1; i < stroke.length; i++) {
+          d += ` L ${stroke[i][0]} ${stroke[i][1]}`;
+        }
+        d += ' Z';
+        
+        pathElement.setAttribute('d', d);
+        pathElement.setAttribute('fill', path.tool === 'eraser' ? 'white' : path.color);
+        pathElement.setAttribute('stroke', 'none');
+        svg.appendChild(pathElement);
+      }
+    });
+
+    // Convert shapes to SVG elements
+    shapes.forEach(shape => {
+      let element;
+      
+      switch (shape.type) {
+        case 'rectangle':
+          element = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          element.setAttribute('x', shape.x.toString());
+          element.setAttribute('y', shape.y.toString());
+          element.setAttribute('width', (shape.width || 0).toString());
+          element.setAttribute('height', (shape.height || 0).toString());
+          break;
+
+        case 'circle':
+          element = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          element.setAttribute('cx', shape.x.toString());
+          element.setAttribute('cy', shape.y.toString());
+          element.setAttribute('r', (shape.radius || 0).toString());
+          break;
+
+        case 'text':
+          element = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          element.setAttribute('x', shape.x.toString());
+          element.setAttribute('y', shape.y.toString());
+          element.setAttribute('font-family', 'Arial');
+          element.setAttribute('font-size', (shape.strokeWidth * 8).toString());
+          element.textContent = shape.text || '';
+          break;
+      }
+
+      if (element) {
+        if (shape.type !== 'text') {
+          element.setAttribute('fill', 'none');
+          element.setAttribute('stroke', shape.color);
+          element.setAttribute('stroke-width', shape.strokeWidth.toString());
+        } else {
+          element.setAttribute('fill', shape.color);
+        }
+        svg.appendChild(element);
+      }
+    });
+
+    // Download SVG
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    
     const link = document.createElement('a');
-    link.download = `whiteboard-${roomId}-${Date.now()}.png`;
-    link.href = dataURL;
+    link.download = `whiteboard-${roomId}-${Date.now()}.svg`;
+    link.href = svgUrl;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    URL.revokeObjectURL(svgUrl);
+  };
+
+  const exportAsJSON = () => {
+    const data = {
+      roomId,
+      exported: new Date().toISOString(),
+      exportedBy: username,
+      canvasData: {
+        paths,
+        shapes,
+        background: '#ffffff'
+      },
+      metadata: {
+        width: canvasRef.current?.width || 800,
+        height: canvasRef.current?.height || 600,
+        zoom,
+        pan
+      }
+    };
+
+    const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    
+    const link = document.createElement('a');
+    link.download = `whiteboard-${roomId}-${Date.now()}.json`;
+    link.href = jsonUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(jsonUrl);
   };
 
   const resetView = () => {
@@ -414,18 +686,64 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
       }
     };
 
+    const handleCursorUpdate = (data: { username: string; x: number; y: number; isDrawing: boolean; color: string; timestamp: number }) => {
+      if (data.username !== username) {
+        setUserCursors(prev => {
+          const newCursors = new Map(prev);
+          newCursors.set(data.username, {
+            username: data.username,
+            x: data.x,
+            y: data.y,
+            isDrawing: data.isDrawing,
+            color: data.color,
+            lastUpdate: data.timestamp
+          });
+          return newCursors;
+        });
+      }
+    };
+
+    const handleWhiteboardLoad = (data: { canvasData: { paths: DrawingPath[]; shapes: Shape[] } }) => {
+      if (data.canvasData) {
+        if (data.canvasData.paths) setPaths(data.canvasData.paths);
+        if (data.canvasData.shapes) setShapes(data.canvasData.shapes);
+      }
+    };
+
     socket.on('whiteboard-path', handleRemotePath);
     socket.on('whiteboard-shape', handleRemoteShape);
     socket.on('whiteboard-clear', handleRemoteClear);
+    socket.on('cursor-update', handleCursorUpdate);
+    socket.on('whiteboard-load', handleWhiteboardLoad);
 
     return () => {
       socket.off('whiteboard-path', handleRemotePath);
       socket.off('whiteboard-shape', handleRemoteShape);
       socket.off('whiteboard-clear', handleRemoteClear);
+      socket.off('cursor-update', handleCursorUpdate);
+      socket.off('whiteboard-load', handleWhiteboardLoad);
     };
   }, [socket, username]);
 
-  if (!isClient) {
+  // Clean up old cursors
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      setUserCursors(prev => {
+        const newCursors = new Map();
+        prev.forEach((cursor, username) => {
+          if (now - cursor.lastUpdate < 10000) { // Keep cursors for 10 seconds
+            newCursors.set(username, cursor);
+          }
+        });
+        return newCursors;
+      });
+    }, 5000); // Clean up every 5 seconds
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
+  if (!isClient || isLoading) {
     return (
       <div className="flex flex-col h-full bg-base-100">
         <div className="flex items-center justify-center h-full">
@@ -577,6 +895,20 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
         </div>
 
         <div className="navbar-end">
+          {/* Save Status */}
+          <div className="flex items-center mr-4">
+            {lastSaved && (
+              <span className="text-xs text-gray-500">
+                Saved {new Date(lastSaved).toLocaleTimeString()}
+              </span>
+            )}
+            {userCursors.size > 0 && (
+              <span className="text-xs text-blue-500 ml-2">
+                {userCursors.size} user{userCursors.size > 1 ? 's' : ''} online
+              </span>
+            )}
+          </div>
+          
           <div className="join">
             <button
               onClick={undo}
@@ -596,13 +928,41 @@ const CustomWhiteboard: React.FC<WhiteboardProps> = ({
               <Redo2 className="w-4 h-4" />
             </button>
 
-            <button
-              onClick={exportCanvas}
-              className="btn btn-sm join-item btn-ghost"
-              title="Export PNG"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+            {/* Export Dropdown */}
+            <div className="dropdown dropdown-top dropdown-end">
+              <button
+                tabIndex={0}
+                className="btn btn-sm join-item btn-ghost"
+                title="Export"
+                onClick={() => setShowExportMenu(!showExportMenu)}
+              >
+                <Download className="w-4 h-4" />
+              </button>
+              {showExportMenu && (
+                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32">
+                  <li>
+                    <button onClick={() => { exportCanvas('png'); setShowExportMenu(false); }}>
+                      PNG Image
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { exportCanvas('jpg'); setShowExportMenu(false); }}>
+                      JPG Image
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { exportCanvas('svg'); setShowExportMenu(false); }}>
+                      SVG Vector
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={() => { exportCanvas('json'); setShowExportMenu(false); }}>
+                      JSON Data
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </div>
 
             <button
               onClick={clearCanvas}

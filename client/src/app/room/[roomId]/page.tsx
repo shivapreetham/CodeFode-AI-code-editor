@@ -13,6 +13,7 @@ import FileTabs from "@/app/components/room/FileTabs";
 import CodeEditor from "@/app/components/room/CodeEditor";
 import CodeOutput from "@/app/components/room/CodeOutput";
 import CodeVisualization from "@/app/components/room/CodeVisualization";
+import MousePointerTracker from "@/app/components/mousePointer/MousePointerTracker";
 
 // Hooks
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -59,6 +60,7 @@ const RoomContent = () => {
   const [notes, setNotes] = useState<Map<string, string>>(new Map());
   const [showVisualization, setShowVisualization] = useState(false);
   const [aiInlineSuggestions, setAiInlineSuggestions] = useState<string[]>([]);
+  const [editingSessions, setEditingSessions] = useState<Map<string, { startTime: number, filePath: string }>>(new Map());
 
   // Room state management using centralized context
   const {
@@ -172,7 +174,62 @@ const RoomContent = () => {
 
       socketRef?.current?.emit(ACTIONS.CURSOR_CHANGE, payload);
     });
-  }, [activeFile, username, roomId, socketRef]);
+
+    // Track edit sessions
+    editor.onDidChangeModelContent(() => {
+      const currentFilePath = activeFile?.path;
+      
+      if (!currentFilePath || !username || !socketRef?.current) return;
+
+      const sessionKey = `${username}-${currentFilePath}`;
+      
+      // Start edit session if not already started
+      if (!editingSessions.has(sessionKey)) {
+        const startTime = Date.now();
+        setEditingSessions(prev => new Map(prev).set(sessionKey, { startTime, filePath: currentFilePath }));
+        
+        socketRef.current.emit(ACTIONS.FILE_EDIT_START, {
+          roomId,
+          username,
+          filePath: currentFilePath,
+          fileName: activeFile?.name,
+          language: activeFile?.language,
+          timestamp: startTime
+        });
+      }
+    });
+
+    // Track when user stops editing (focus lost)
+    editor.onDidBlurEditorText(() => {
+      const currentFilePath = activeFile?.path;
+      
+      if (!currentFilePath || !username || !socketRef?.current) return;
+
+      const sessionKey = `${username}-${currentFilePath}`;
+      const session = editingSessions.get(sessionKey);
+      
+      if (session) {
+        const endTime = Date.now();
+        const duration = endTime - session.startTime;
+        
+        setEditingSessions(prev => {
+          const newSessions = new Map(prev);
+          newSessions.delete(sessionKey);
+          return newSessions;
+        });
+        
+        socketRef.current.emit(ACTIONS.FILE_EDIT_END, {
+          roomId,
+          username,
+          filePath: currentFilePath,
+          fileName: activeFile?.name,
+          language: activeFile?.language,
+          duration,
+          timestamp: endTime
+        });
+      }
+    });
+  }, [activeFile, username, roomId, socketRef, editingSessions]);
 
   // Socket event listeners - now handled by RoomContext initialization
   useEffect(() => {
@@ -247,10 +304,22 @@ const RoomContent = () => {
     onToggleSidebar: toggleSidebar,
   });
 
-  // Update global active file when it changes
+  // Update global active file when it changes and track file opened
   useEffect(() => {
     setActiveFileGlobal(activeFile);
-  }, [activeFile, setActiveFileGlobal]);
+    
+    // Track file opened event
+    if (activeFile?.path && socketRef?.current && username) {
+      socketRef.current.emit(ACTIONS.FILE_OPENED, {
+        roomId,
+        username,
+        filePath: activeFile.path,
+        fileName: activeFile.name,
+        language: activeFile.language,
+        timestamp: Date.now()
+      });
+    }
+  }, [activeFile, setActiveFileGlobal, socketRef, roomId, username]);
 
   // Reset AI trigger flag when active file changes
   useEffect(() => {
@@ -437,6 +506,14 @@ const RoomContent = () => {
       }}
     >
       <div className={`vscode-container ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+        {/* Mouse Pointer Tracker */}
+        <MousePointerTracker
+          socket={socketRef?.current}
+          roomId={roomId}
+          username={username || 'Anonymous'}
+          isCodeEditorActive={activeTab === 0} // Track only when in file explorer or coding area
+        />
+        
         <Toaster
           position="top-right"
           toastOptions={{

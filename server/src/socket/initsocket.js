@@ -12,6 +12,13 @@ import {
   handleExecuteCode,
   handleGetMessages,
   handleDisconnection,
+  handleFileOpened,
+  handleFileEditStart,
+  handleFileEditEnd,
+  handleMousePointerMove,
+  handleWhiteboardDraw,
+  handleWhiteboardClear,
+  handleWhiteboardLoad,
   cleanupSocketHandlers
 } from "./socketHandlers.js";
 
@@ -90,6 +97,23 @@ io.on("connection", (socket) => {
   socket.on(ACTIONS.EXECUTE_CODE, handleExecuteCode(socket, userRoomMap));
   
   socket.on(ACTIONS.GET_MESSAGES, handleGetMessages(socket, chatMessages));
+  
+  // File tracking events
+  socket.on(ACTIONS.FILE_OPENED, handleFileOpened(socket, userRoomMap, io));
+  
+  socket.on(ACTIONS.FILE_EDIT_START, handleFileEditStart(socket, userRoomMap, io));
+  
+  socket.on(ACTIONS.FILE_EDIT_END, handleFileEditEnd(socket, userRoomMap, io));
+  
+  // Mouse pointer tracking
+  socket.on(ACTIONS.MOUSE_POINTER_MOVE, handleMousePointerMove(socket, userRoomMap));
+  
+  // Whiteboard events
+  socket.on(ACTIONS.WHITEBOARD_DRAW, handleWhiteboardDraw(socket, userRoomMap, io));
+  
+  socket.on(ACTIONS.WHITEBOARD_CLEAR, handleWhiteboardClear(socket, userRoomMap, io));
+  
+  socket.on(ACTIONS.WHITEBOARD_LOAD, handleWhiteboardLoad(socket, userRoomMap));
   
   // Handle disconnection
   socket.on("disconnecting", () => {

@@ -6,6 +6,7 @@ import workspaceRouters from './routes/workspaceRoutes.js';
 import connectDB from "./db/dbconn.js";
 import aiRoutes from './routes/aiRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import whiteboardRoutes from './routes/whiteboardRoutes.js';
 
 // Import middleware and configuration
 import config, { validateEnvironment } from './config/environment.js';
@@ -35,6 +36,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/workspace', workspaceRouters);
 app.use('/api/ai', aiRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/whiteboard', whiteboardRoutes);
 
 // Health check and monitoring endpoints
 app.get('/health', (req, res) => {

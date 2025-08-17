@@ -3,6 +3,9 @@ import { ACTIONS } from '../constants/actions.js';
 import { logger, logSocketEvent } from '../middleware/logger.js';
 import { chatMessageSchema, codeExecutionSchema } from '../middleware/validation.js';
 import executeCode from '../controllers/runInContainer.js';
+import { addWhiteboardNotification } from '../controllers/whiteboardController.js';
+import Whiteboard from '../models/whiteboard.js';
+import { Workspace } from '../models/workspace.js';
 
 // Socket event validation schemas
 const joinRoomSchema = z.object({
@@ -23,6 +26,39 @@ const cursorChangeSchema = z.object({
 const codeChangeSchema = z.object({
   roomId: z.string().min(1, 'Room ID is required'),
   payload: z.any()
+});
+
+// New schemas for whiteboard and file tracking
+const fileTrackingSchema = z.object({
+  roomId: z.string().min(1, 'Room ID is required'),
+  username: z.string().min(1, 'Username is required'),
+  filePath: z.string().min(1, 'File path is required'),
+  fileName: z.string().optional(),
+  language: z.string().optional(),
+  duration: z.number().optional(),
+  timestamp: z.number()
+});
+
+const mousePointerSchema = z.object({
+  roomId: z.string().min(1, 'Room ID is required'),
+  username: z.string().min(1, 'Username is required'),
+  x: z.number(),
+  y: z.number(),
+  timestamp: z.number()
+});
+
+const whiteboardDrawSchema = z.object({
+  roomId: z.string().min(1, 'Room ID is required'),
+  username: z.string().min(1, 'Username is required'),
+  type: z.enum(['path', 'object', 'text']),
+  data: z.any(),
+  timestamp: z.number()
+});
+
+const whiteboardClearSchema = z.object({
+  roomId: z.string().min(1, 'Room ID is required'),
+  username: z.string().min(1, 'Username is required'),
+  timestamp: z.number()
 });
 
 // Rate limiting for socket events
@@ -386,6 +422,274 @@ export const handleDisconnection = (socket, userSocketMap, userRoomMap, io) => {
 
     } catch (error) {
       logger.error('Disconnection handling error', { socketId: socket.id, error: error.message });
+    }
+  };
+};
+
+// New handlers for file tracking
+export const handleFileOpened = (socket, userRoomMap, io) => {
+  return async (data) => {
+    try {
+      const validatedData = validateSocketData(fileTrackingSchema, data, socket.id, ACTIONS.FILE_OPENED);
+      const { roomId, username, filePath, fileName, language } = validatedData;
+
+      // Verify user is in the room
+      if (userRoomMap[socket.id] !== roomId) {
+        emitError(socket, 'Not authorized for this room', ACTIONS.FILE_OPENED);
+        return;
+      }
+
+      // Add notification to workspace
+      const workspace = await Workspace.findOne({ roomId });
+      if (workspace) {
+        const notification = {
+          type: 'FILE_OPEN',
+          message: `${username} opened ${fileName || filePath}`,
+          username,
+          timestamp: new Date(),
+          metadata: {
+            path: filePath,
+            language,
+            action: 'open'
+          }
+        };
+
+        workspace.notifications.push(notification);
+        workspace.lastUpdated = new Date();
+        await workspace.save();
+
+        // Broadcast notification to all users in room
+        io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+      }
+
+      logSocketEvent(ACTIONS.FILE_OPENED, socket.id, { roomId, filePath });
+
+    } catch (error) {
+      logger.error('File opened error', { socketId: socket.id, error: error.message });
+    }
+  };
+};
+
+export const handleFileEditStart = (socket, userRoomMap, io) => {
+  return async (data) => {
+    try {
+      const validatedData = validateSocketData(fileTrackingSchema, data, socket.id, ACTIONS.FILE_EDIT_START);
+      const { roomId, username, filePath, fileName, language } = validatedData;
+
+      // Verify user is in the room
+      if (userRoomMap[socket.id] !== roomId) {
+        emitError(socket, 'Not authorized for this room', ACTIONS.FILE_EDIT_START);
+        return;
+      }
+
+      // Add notification to workspace
+      const workspace = await Workspace.findOne({ roomId });
+      if (workspace) {
+        const notification = {
+          type: 'FILE_EDIT_START',
+          message: `${username} started editing ${fileName || filePath}`,
+          username,
+          timestamp: new Date(),
+          metadata: {
+            path: filePath,
+            language,
+            action: 'edit_start'
+          }
+        };
+
+        workspace.notifications.push(notification);
+        workspace.lastUpdated = new Date();
+        await workspace.save();
+
+        // Broadcast notification to all users in room
+        io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+      }
+
+      logSocketEvent(ACTIONS.FILE_EDIT_START, socket.id, { roomId, filePath });
+
+    } catch (error) {
+      logger.error('File edit start error', { socketId: socket.id, error: error.message });
+    }
+  };
+};
+
+export const handleFileEditEnd = (socket, userRoomMap, io) => {
+  return async (data) => {
+    try {
+      const validatedData = validateSocketData(fileTrackingSchema, data, socket.id, ACTIONS.FILE_EDIT_END);
+      const { roomId, username, filePath, fileName, language, duration } = validatedData;
+
+      // Verify user is in the room
+      if (userRoomMap[socket.id] !== roomId) {
+        emitError(socket, 'Not authorized for this room', ACTIONS.FILE_EDIT_END);
+        return;
+      }
+
+      // Add notification to workspace
+      const workspace = await Workspace.findOne({ roomId });
+      if (workspace) {
+        const durationText = duration ? ` (${Math.round(duration / 1000)}s)` : '';
+        const notification = {
+          type: 'FILE_EDIT_END',
+          message: `${username} finished editing ${fileName || filePath}${durationText}`,
+          username,
+          timestamp: new Date(),
+          metadata: {
+            path: filePath,
+            language,
+            action: 'edit_end',
+            duration
+          }
+        };
+
+        workspace.notifications.push(notification);
+        workspace.lastUpdated = new Date();
+        await workspace.save();
+
+        // Broadcast notification to all users in room
+        io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+      }
+
+      logSocketEvent(ACTIONS.FILE_EDIT_END, socket.id, { roomId, filePath, duration });
+
+    } catch (error) {
+      logger.error('File edit end error', { socketId: socket.id, error: error.message });
+    }
+  };
+};
+
+// Mouse pointer tracking
+export const handleMousePointerMove = (socket, userRoomMap) => {
+  return (data) => {
+    try {
+      // Rate limiting for mouse events
+      if (!rateLimiter.isAllowed(socket.id, 'mouse_pointer', 60, 10000)) {
+        return; // Silently ignore
+      }
+
+      const validatedData = validateSocketData(mousePointerSchema, data, socket.id, ACTIONS.MOUSE_POINTER_MOVE);
+      const { roomId, username, x, y } = validatedData;
+
+      // Verify user is in the room
+      if (userRoomMap[socket.id] !== roomId) {
+        return;
+      }
+
+      // Broadcast to other users in room
+      socket.to(roomId).emit(ACTIONS.MOUSE_POINTER_MOVE, {
+        username,
+        x,
+        y,
+        timestamp: Date.now()
+      });
+
+    } catch (error) {
+      logger.error('Mouse pointer move error', { socketId: socket.id, error: error.message });
+    }
+  };
+};
+
+// Whiteboard event handlers
+export const handleWhiteboardDraw = (socket, userRoomMap, io) => {
+  return async (data) => {
+    try {
+      // Rate limiting
+      if (!rateLimiter.isAllowed(socket.id, 'whiteboard_draw', 100, 10000)) {
+        return;
+      }
+
+      const validatedData = validateSocketData(whiteboardDrawSchema, data, socket.id, ACTIONS.WHITEBOARD_DRAW);
+      const { roomId, username, type, data: drawData } = validatedData;
+
+      // Verify user is in the room
+      if (userRoomMap[socket.id] !== roomId) {
+        emitError(socket, 'Not authorized for this room', ACTIONS.WHITEBOARD_DRAW);
+        return;
+      }
+
+      // Broadcast to other users in room
+      socket.to(roomId).emit(ACTIONS.WHITEBOARD_DRAW, {
+        username,
+        type,
+        data: drawData,
+        timestamp: Date.now()
+      });
+
+      // Add activity notification
+      await addWhiteboardNotification(
+        roomId,
+        'WHITEBOARD_DRAW',
+        username,
+        `${username} drew on the whiteboard`,
+        { action: 'draw' }
+      );
+
+      logSocketEvent(ACTIONS.WHITEBOARD_DRAW, socket.id, { roomId, type });
+
+    } catch (error) {
+      logger.error('Whiteboard draw error', { socketId: socket.id, error: error.message });
+    }
+  };
+};
+
+export const handleWhiteboardClear = (socket, userRoomMap, io) => {
+  return async (data) => {
+    try {
+      const validatedData = validateSocketData(whiteboardClearSchema, data, socket.id, ACTIONS.WHITEBOARD_CLEAR);
+      const { roomId, username } = validatedData;
+
+      // Verify user is in the room
+      if (userRoomMap[socket.id] !== roomId) {
+        emitError(socket, 'Not authorized for this room', ACTIONS.WHITEBOARD_CLEAR);
+        return;
+      }
+
+      // Broadcast to other users in room
+      socket.to(roomId).emit(ACTIONS.WHITEBOARD_CLEAR, {
+        username,
+        timestamp: Date.now()
+      });
+
+      // Add activity notification
+      await addWhiteboardNotification(
+        roomId,
+        'WHITEBOARD_CLEAR',
+        username,
+        `${username} cleared the whiteboard`,
+        { action: 'clear' }
+      );
+
+      logSocketEvent(ACTIONS.WHITEBOARD_CLEAR, socket.id, { roomId });
+
+    } catch (error) {
+      logger.error('Whiteboard clear error', { socketId: socket.id, error: error.message });
+    }
+  };
+};
+
+export const handleWhiteboardLoad = (socket, userRoomMap) => {
+  return async (data) => {
+    try {
+      const { roomId } = data;
+
+      // Verify user is in the room
+      if (userRoomMap[socket.id] !== roomId) {
+        emitError(socket, 'Not authorized for this room', ACTIONS.WHITEBOARD_LOAD);
+        return;
+      }
+
+      // Load whiteboard data
+      const whiteboard = await Whiteboard.findByRoomId(roomId);
+      
+      socket.emit(ACTIONS.WHITEBOARD_LOAD, {
+        canvasData: whiteboard?.canvasData || null,
+        metadata: whiteboard?.metadata || null
+      });
+
+      logSocketEvent(ACTIONS.WHITEBOARD_LOAD, socket.id, { roomId });
+
+    } catch (error) {
+      logger.error('Whiteboard load error', { socketId: socket.id, error: error.message });
     }
   };
 };

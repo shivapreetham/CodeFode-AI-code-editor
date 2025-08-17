@@ -5,6 +5,7 @@ import Chat from "@/app/components/chat/Chat";
 import ThemeSwitcher from "@/app/components/ui/theme/ThemeComp";
 import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
 import ActivityLog from "@/app/components/activityLog/activityLog";
+import Whiteboard from "@/app/components/whiteboard/Whiteboard";
 import { IFile } from "@/interfaces/IFile";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
 import { Notification } from "@/interfaces/Notifications";
@@ -45,7 +46,8 @@ const tabLabels = {
   2: "Chat", 
   3: "Settings",
   4: "AI Assistant",
-  5: "Notifications"
+  5: "Notifications",
+  6: "Whiteboard"
 };
 
 const SidebarPanel: React.FC<SidebarPanelProps> = ({
@@ -147,6 +149,17 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
             <ActivityLog
               notifications={notifications}
               onRefresh={onRefreshNotifications}
+            />
+          </div>
+        )}
+        
+        {activeTab === 6 && (
+          <div className="h-full">
+            <Whiteboard
+              roomId={roomId}
+              username={username || 'Anonymous'}
+              socket={socket}
+              isActive={activeTab === 6}
             />
           </div>
         )}

@@ -25,7 +25,12 @@ const filesContentSchema = new mongoose.Schema({
 const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['FILE_CREATE', 'FILE_UPDATE', 'FILE_DELETE','FILE_MOVE', 'FOLDER_CREATE', 'FOLDER_DELETE', 'USER_JOIN', 'USER_LEAVE', 'CODE_EXECUTE'],
+    enum: [
+      'FILE_CREATE', 'FILE_UPDATE', 'FILE_DELETE', 'FILE_MOVE', 'FILE_OPEN', 
+      'FILE_EDIT_START', 'FILE_EDIT_END', 'FOLDER_CREATE', 'FOLDER_DELETE', 
+      'USER_JOIN', 'USER_LEAVE', 'CODE_EXECUTE', 'WHITEBOARD_DRAW', 
+      'WHITEBOARD_TEXT', 'WHITEBOARD_CLEAR'
+    ],
     required: true
   },
   message: {
@@ -41,9 +46,15 @@ const notificationSchema = new mongoose.Schema({
     default: Date.now
   },
   metadata: {
-    path: String,           // For file/folder operations
-    language: String,       // For file operations
-    executionStatus: String // For code execution
+    path: String,                    // For file/folder operations
+    language: String,                // For file operations
+    executionStatus: String,         // For code execution
+    action: String,                  // open, edit_start, edit_end, draw, text, clear
+    duration: Number,                // For edit sessions in milliseconds
+    coordinates: {                   // For whiteboard actions
+      x: Number,
+      y: Number
+    }
   }
 });
 

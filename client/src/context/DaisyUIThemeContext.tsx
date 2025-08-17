@@ -6,12 +6,12 @@ interface DaisyUIThemeContextProps {
 }
 
 export const DaisyUIThemeContext = createContext<DaisyUIThemeContextProps>({
-  daisyTheme: "vscode-dark",
+  daisyTheme: "dark",
   setDaisyTheme: () => {},
 });
 
 export const DaisyUIThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [daisyTheme, setDaisyTheme] = useState("vscode-dark");
+  const [daisyTheme, setDaisyTheme] = useState("dark");
 
   // Apply theme to document
   useEffect(() => {

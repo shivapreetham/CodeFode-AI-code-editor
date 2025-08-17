@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: any }) {
   return (
-    <html lang="en" data-theme="vscode-dark">
+    <html lang="en" data-theme="dark">
       <Providers>
         <DaisyUIThemeProvider>
           <ThemeProvider>

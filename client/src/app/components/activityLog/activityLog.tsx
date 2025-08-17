@@ -6,24 +6,15 @@ import {
   PlayIcon, 
   XIcon,
   FilterIcon,
-  RefreshCwIcon
+  RefreshCwIcon,
+  FolderOpenIcon,
+  EditIcon,
+  PenTool,
+  TypeIcon,
+  Trash2Icon
 } from 'lucide-react';
 
-export interface NotificationMetadata {
-  path?: string;
-  language?: string;
-  executionStatus?: string;
-}
-
-export interface Notification {
-  _id?: string;
-  type: 'FILE_CREATE' | 'FILE_UPDATE' | 'FILE_DELETE' |'FILE_MOVE' | 'FOLDER_CREATE' |'FOLDER_MOVE' |
-        'FOLDER_DELETE' | 'USER_JOIN' | 'USER_LEAVE' | 'CODE_EXECUTE';
-  message: string;
-  username: string;
-  timestamp: Date;
-  metadata?: NotificationMetadata;
-}
+import { Notification } from '@/interfaces/Notifications';
 
 interface ActivityLogProps {
   notifications: Notification[];
@@ -40,6 +31,11 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
       case 'FILE_UPDATE':
       case 'FILE_DELETE':
         return <FileIcon className="w-4 h-4" />;
+      case 'FILE_OPEN':
+        return <FolderOpenIcon className="w-4 h-4" />;
+      case 'FILE_EDIT_START':
+      case 'FILE_EDIT_END':
+        return <EditIcon className="w-4 h-4" />;
       case 'FOLDER_CREATE':
       case 'FOLDER_DELETE':
         return <FolderIcon className="w-4 h-4" />;
@@ -48,6 +44,12 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
         return <UserIcon className="w-4 h-4" />;
       case 'CODE_EXECUTE':
         return <PlayIcon className="w-4 h-4" />;
+      case 'WHITEBOARD_DRAW':
+        return <PenTool className="w-4 h-4" />;
+      case 'WHITEBOARD_TEXT':
+        return <TypeIcon className="w-4 h-4" />;
+      case 'WHITEBOARD_CLEAR':
+        return <Trash2Icon className="w-4 h-4" />;
       default:
         return null;
     }
@@ -60,15 +62,24 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
         return 'text-green-500';
       case 'FILE_DELETE':
       case 'FOLDER_DELETE':
+      case 'WHITEBOARD_CLEAR':
         return 'text-red-500';
       case 'FILE_UPDATE':
+      case 'FILE_EDIT_START':
+      case 'FILE_EDIT_END':
         return 'text-blue-500';
+      case 'FILE_OPEN':
+        return 'text-cyan-500';
       case 'USER_JOIN':
         return 'text-purple-500';
       case 'USER_LEAVE':
         return 'text-orange-500';
       case 'CODE_EXECUTE':
         return 'text-yellow-500';
+      case 'WHITEBOARD_DRAW':
+        return 'text-pink-500';
+      case 'WHITEBOARD_TEXT':
+        return 'text-indigo-500';
       default:
         return 'text-gray-500';
     }
@@ -101,7 +112,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
       {isFilterOpen && (
         <div className="flex flex-wrap gap-2">
           <div className="join">
-            {['ALL', 'FILE', 'FOLDER', 'USER', 'CODE'].map(filterType => (
+            {['ALL', 'FILE', 'FOLDER', 'USER', 'CODE', 'WHITEBOARD'].map(filterType => (
               <button
                 key={filterType}
                 onClick={() => setFilter(filterType)}

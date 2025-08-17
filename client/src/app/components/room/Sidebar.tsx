@@ -6,6 +6,7 @@ import {
   Settings, 
   Sparkles, 
   Bell,
+  PenTool,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -31,6 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 3, icon: Settings, label: "Settings", ariaLabel: "Room Settings" },
     { id: 4, icon: Sparkles, label: "AI", ariaLabel: "AI Assistant" },
     { id: 5, icon: Bell, label: "Notifications", ariaLabel: "Activity Notifications" },
+    { id: 6, icon: PenTool, label: "Whiteboard", ariaLabel: "Collaborative Whiteboard" },
   ];
 
   const handleTabChange = useCallback((tabId: number) => {

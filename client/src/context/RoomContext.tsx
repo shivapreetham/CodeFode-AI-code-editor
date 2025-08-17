@@ -260,14 +260,28 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
           pattern: roomId ? /^[A-Za-z0-9_-]+$/.test(roomId) : false
         });
         toast.error('Invalid room ID format');
+        setWorkspaceLoaded(true); // Prevent infinite loop
         return;
       }
+      
+      // Add timeout for workspace loading
+      const timeoutId = setTimeout(() => {
+        console.log('⏰ Workspace loading timeout - using defaults');
+        setWorkspaceLoaded(true);
+        setLoading(false);
+        toast.error('Workspace loading timeout - using defaults');
+      }, 5000);
       
       try {
         console.log('🚀 Loading workspace for room:', roomId);
         setLoading(true);
         
-        const workspace = await workspaceApi.getWorkspace(roomId);
+        const workspace = await Promise.race([
+          workspaceApi.getWorkspace(roomId),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Workspace loading timeout')), 4000)
+          )
+        ]);
         // Debug workspace loading
         if (!workspace) {
           console.log('⚠️ No workspace data received');
@@ -332,9 +346,11 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
           filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
         }
         
+        clearTimeout(timeoutId);
         setWorkspaceLoaded(true);
         console.log('✅ Workspace loading completed');
       } catch (error: any) {
+        clearTimeout(timeoutId);
         console.error("❌ Error loading workspace:", {
           message: error.message,
           status: error.response?.status,
@@ -719,7 +735,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
     // Room info
     roomId,
     username,
-    isInitialized: isInitialized && workspaceLoaded, // Both conditions must be true
+    isInitialized: isInitialized, // Only require socket connection
     socketRef,
   };
 

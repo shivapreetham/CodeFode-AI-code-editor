@@ -5,7 +5,7 @@ import Chat from "@/app/components/chat/Chat";
 import ThemeSwitcher from "@/app/components/ui/theme/ThemeComp";
 import AiSuggestionSidebar from "@/app/components/aiSidebar/AiSidebar";
 import ActivityLog from "@/app/components/activityLog/activityLog";
-import Whiteboard from "@/app/components/whiteboard/Whiteboard";
+import WhiteboardWrapper from "@/app/components/whiteboard/WhiteboardWrapper";
 import { IFile } from "@/interfaces/IFile";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
 import { Notification } from "@/interfaces/Notifications";
@@ -162,7 +162,8 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
         
         {activeTab === 6 && (
           <div className="h-full">
-            <Whiteboard
+            <WhiteboardWrapper
+              key={roomId}
               roomId={roomId}
               username={username || 'Anonymous'}
               socket={socket?.current}

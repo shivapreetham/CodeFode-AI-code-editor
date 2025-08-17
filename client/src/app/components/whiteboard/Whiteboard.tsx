@@ -1,22 +1,15 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import * as fabric from 'fabric';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Pen, 
   Eraser, 
   Square, 
-  Circle, 
+  Circle as CircleIcon, 
   Type, 
   Palette, 
-  Undo, 
-  Redo, 
   Download, 
   Trash2,
-  ZoomIn,
-  ZoomOut,
   Move
 } from 'lucide-react';
-import { ChromePicker } from 'react-color';
-import { ACTIONS } from '@/app/helpers/Actions';
 
 interface WhiteboardProps {
   roomId: string;
@@ -25,7 +18,7 @@ interface WhiteboardProps {
   isActive?: boolean;
 }
 
-type DrawingTool = 'pen' | 'eraser' | 'rectangle' | 'circle' | 'text' | 'select' | 'pan';
+type DrawingTool = 'pen' | 'eraser' | 'rectangle' | 'circle' | 'text' | 'select';
 
 const Whiteboard: React.FC<WhiteboardProps> = ({ 
   roomId, 
@@ -33,411 +26,126 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
   socket,
   isActive = false 
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const [selectedTool, setSelectedTool] = useState<DrawingTool>('pen');
   const [strokeColor, setStrokeColor] = useState('#000000');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isReady, setIsReady] = useState(false);
-
-  // Flag to prevent event loops
-  const preventBroadcast = useRef(false);
-
-  // Initialize Fabric.js canvas with proper error handling
+  
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lastPointRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  
   useEffect(() => {
-    if (!canvasRef.current || fabricCanvasRef.current) return;
-
-    let canvas: fabric.Canvas;
-
-    try {
-      // Create canvas with optimized settings
-      canvas = new fabric.Canvas(canvasRef.current, {
-        width: 1200,
-        height: 800,
-        backgroundColor: '#ffffff',
-        selection: false,
-        preserveObjectStacking: true,
-        renderOnAddRemove: true,
-        skipTargetFind: false,
-        allowTouchScrolling: false
-      });
-
-      fabricCanvasRef.current = canvas;
-
-      // Basic canvas event handlers
-      canvas.on('mouse:down', () => setIsDrawing(true));
-      canvas.on('mouse:up', () => setIsDrawing(false));
-
-      // Set initial state
-      setIsReady(true);
-      setIsLoading(false);
-
-      console.log('✅ Canvas initialized successfully');
-
-      return () => {
-        try {
-          if (canvas) {
-            canvas.dispose();
-          }
-        } catch (error) {
-          console.error('Error disposing canvas:', error);
-        }
-        fabricCanvasRef.current = null;
-      };
-    } catch (error) {
-      console.error('❌ Canvas initialization failed:', error);
-      setIsLoading(false);
-    }
+    setIsClient(true);
   }, []);
 
-  // Handle tool configuration when canvas is ready
   useEffect(() => {
-    if (!fabricCanvasRef.current || !isReady) return;
+    if (!isClient || !canvasRef.current) return;
 
-    const canvas = fabricCanvasRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (!context) return;
 
-    try {
-      // Configure tool settings
-      canvas.selection = selectedTool === 'select';
-      canvas.isDrawingMode = selectedTool === 'pen' || selectedTool === 'eraser';
-
-      if (canvas.isDrawingMode && canvas.freeDrawingBrush) {
-        canvas.freeDrawingBrush.width = selectedTool === 'eraser' ? strokeWidth * 2 : strokeWidth;
-        canvas.freeDrawingBrush.color = selectedTool === 'eraser' ? '#ffffff' : strokeColor;
-      }
-
-      canvas.renderAll();
-    } catch (error) {
-      console.error('Error configuring tool:', error);
-    }
-  }, [selectedTool, strokeWidth, strokeColor, isReady]);
-
-  // Set up real-time collaboration events
-  useEffect(() => {
-    if (!fabricCanvasRef.current || !socket || !isReady) return;
-
-    const canvas = fabricCanvasRef.current;
-
-    // Handle path created (drawing)
-    const handlePathCreated = (e: fabric.IEvent) => {
-      if (preventBroadcast.current) return;
-
-      try {
-        const path = e.path;
-        if (path && socket) {
-          socket.emit(ACTIONS.WHITEBOARD_DRAW, {
-            roomId,
-            username,
-            type: 'path',
-            data: path.toObject(),
-            timestamp: Date.now()
-          });
-        }
-      } catch (error) {
-        console.error('Error broadcasting path:', error);
-      }
-    };
-
-    // Handle object added (shapes, text)
-    const handleObjectAdded = (e: fabric.IEvent) => {
-      if (preventBroadcast.current || !e.target) return;
-
-      try {
-        if (socket && selectedTool !== 'pen') {
-          socket.emit(ACTIONS.WHITEBOARD_DRAW, {
-            roomId,
-            username,
-            type: 'object',
-            data: e.target.toObject(),
-            timestamp: Date.now()
-          });
-        }
-      } catch (error) {
-        console.error('Error broadcasting object:', error);
-      }
-    };
-
-    // Mouse tracking for collaborative cursors
-    const handleMouseMove = (e: fabric.IEvent) => {
-      if (!socket || !isActive) return;
-
-      try {
-        const pointer = canvas.getPointer(e.e as MouseEvent);
-        socket.emit(ACTIONS.MOUSE_POINTER_MOVE, {
-          roomId,
-          username,
-          x: pointer.x,
-          y: pointer.y,
-          timestamp: Date.now()
-        });
-      } catch (error) {
-        console.error('Error tracking mouse:', error);
-      }
-    };
-
-    // Attach event listeners
-    canvas.on('path:created', handlePathCreated);
-    canvas.on('object:added', handleObjectAdded);
-    canvas.on('mouse:move', handleMouseMove);
-
-    return () => {
-      // Clean up event listeners
-      canvas.off('path:created', handlePathCreated);
-      canvas.off('object:added', handleObjectAdded);
-      canvas.off('mouse:move', handleMouseMove);
-    };
-  }, [socket, roomId, username, selectedTool, isActive, isReady]);
-
-  // Load whiteboard data when socket and canvas are ready
-  useEffect(() => {
-    if (!socket || !isReady || !roomId) return;
-
-    console.log('🎨 Loading whiteboard data for room:', roomId);
+    // Set canvas size
+    canvas.width = 800;
+    canvas.height = 600;
     
-    // Request whiteboard data from server
-    socket.emit(ACTIONS.WHITEBOARD_LOAD, { roomId });
+    // Fill with white background
+    context.fillStyle = 'white';
+    context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Set timeout to stop loading even if no response
-    const loadTimeout = setTimeout(() => {
-      console.log('⚠️ Whiteboard load timeout - proceeding with empty canvas');
-      setIsLoading(false);
-    }, 5000);
+    // Configure drawing context
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+  }, [isClient]);
 
-    return () => {
-      clearTimeout(loadTimeout);
-    };
-  }, [socket, roomId, isReady]);
+  const startDrawing = (e: React.MouseEvent) => {
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    lastPointRef.current = { x, y };
+    setIsDrawing(true);
 
-  // Handle incoming collaborative events
-  useEffect(() => {
-    if (!socket || !fabricCanvasRef.current || !isReady) return;
-
-    const canvas = fabricCanvasRef.current;
-
-    const handleRemoteWhiteboardDraw = (data: any) => {
-      if (data.username === username) return; // Ignore own events
-
-      try {
-        preventBroadcast.current = true;
-
-        if (data.type === 'path') {
-          fabric.Path.fromObject(data.data, (path: fabric.Path) => {
-            canvas.add(path);
-            canvas.renderAll();
-            preventBroadcast.current = false;
-          });
-        } else if (data.type === 'object') {
-          fabric.util.enlivenObjects([data.data], (objects: fabric.Object[]) => {
-            objects.forEach(obj => canvas.add(obj));
-            canvas.renderAll();
-            preventBroadcast.current = false;
-          });
-        } else {
-          preventBroadcast.current = false;
+    if (selectedTool === 'text') {
+      const text = prompt('Enter text:');
+      if (text) {
+        const context = canvasRef.current.getContext('2d');
+        if (context) {
+          context.font = '16px Arial';
+          context.fillStyle = strokeColor;
+          context.fillText(text, x, y);
         }
-      } catch (error) {
-        console.error('Error handling remote draw:', error);
-        preventBroadcast.current = false;
       }
-    };
-
-    const handleRemoteWhiteboardClear = (data: any) => {
-      if (data.username === username) return; // Ignore own events
-
-      try {
-        preventBroadcast.current = true;
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        canvas.renderAll();
-        preventBroadcast.current = false;
-      } catch (error) {
-        console.error('Error handling remote clear:', error);
-        preventBroadcast.current = false;
-      }
-    };
-
-    const handleWhiteboardLoad = (data: any) => {
-      try {
-        console.log('🎨 Received whiteboard data:', data);
-        
-        preventBroadcast.current = true;
-        
-        // Clear canvas first
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        
-        // Load canvas data if it exists
-        if (data.canvasData) {
-          canvas.loadFromJSON(data.canvasData, () => {
-            canvas.renderAll();
-            preventBroadcast.current = false;
-            setIsLoading(false);
-            console.log('✅ Whiteboard loaded successfully');
-          });
-        } else {
-          canvas.renderAll();
-          preventBroadcast.current = false;
-          setIsLoading(false);
-          console.log('✅ Empty whiteboard loaded');
-        }
-      } catch (error) {
-        console.error('❌ Error loading whiteboard:', error);
-        preventBroadcast.current = false;
-        setIsLoading(false);
-      }
-    };
-
-    socket.on(ACTIONS.WHITEBOARD_DRAW, handleRemoteWhiteboardDraw);
-    socket.on(ACTIONS.WHITEBOARD_CLEAR, handleRemoteWhiteboardClear);
-    socket.on(ACTIONS.WHITEBOARD_LOAD, handleWhiteboardLoad);
-
-    return () => {
-      socket.off(ACTIONS.WHITEBOARD_DRAW, handleRemoteWhiteboardDraw);
-      socket.off(ACTIONS.WHITEBOARD_CLEAR, handleRemoteWhiteboardClear);
-      socket.off(ACTIONS.WHITEBOARD_LOAD, handleWhiteboardLoad);
-    };
-  }, [socket, username, isReady]);
-
-  // Tool change handler
-  const handleToolChange = useCallback((tool: DrawingTool) => {
-    setSelectedTool(tool);
-  }, []);
-
-  // Add shape
-  const addShape = useCallback((shapeType: 'rectangle' | 'circle') => {
-    if (!fabricCanvasRef.current) return;
-
-    try {
-      const canvas = fabricCanvasRef.current;
-      let shape: fabric.Object;
-
-      if (shapeType === 'rectangle') {
-        shape = new fabric.Rect({
-          left: 100,
-          top: 100,
-          width: 100,
-          height: 80,
-          fill: 'transparent',
-          stroke: strokeColor,
-          strokeWidth: strokeWidth
-        });
-      } else {
-        shape = new fabric.Circle({
-          left: 100,
-          top: 100,
-          radius: 50,
-          fill: 'transparent',
-          stroke: strokeColor,
-          strokeWidth: strokeWidth
-        });
-      }
-
-      canvas.add(shape);
-      canvas.setActiveObject(shape);
-      canvas.renderAll();
-    } catch (error) {
-      console.error('Error adding shape:', error);
+      setIsDrawing(false);
     }
-  }, [strokeColor, strokeWidth]);
+  };
 
-  // Add text
-  const addText = useCallback(() => {
-    if (!fabricCanvasRef.current) return;
-
-    try {
-      const canvas = fabricCanvasRef.current;
-      const text = new fabric.IText('Click to edit', {
-        left: 100,
-        top: 100,
-        fontSize: 20,
-        fill: strokeColor,
-        fontFamily: 'Arial'
-      });
-
-      canvas.add(text);
-      canvas.setActiveObject(text);
-      canvas.renderAll();
-    } catch (error) {
-      console.error('Error adding text:', error);
-    }
-  }, [strokeColor]);
-
-  // Clear canvas
-  const clearCanvas = useCallback(() => {
-    if (!fabricCanvasRef.current) return;
-
-    try {
-      const canvas = fabricCanvasRef.current;
+  const draw = (e: React.MouseEvent) => {
+    if (!isDrawing || !canvasRef.current) return;
+    
+    const context = canvasRef.current.getContext('2d');
+    if (!context) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (selectedTool === 'pen' || selectedTool === 'eraser') {
+      context.strokeStyle = selectedTool === 'eraser' ? 'white' : strokeColor;
+      context.lineWidth = selectedTool === 'eraser' ? strokeWidth * 2 : strokeWidth;
       
-      preventBroadcast.current = true;
-      canvas.clear();
-      canvas.backgroundColor = '#ffffff';
-      canvas.renderAll();
-      preventBroadcast.current = false;
-
-      // Broadcast clear event
-      if (socket) {
-        socket.emit(ACTIONS.WHITEBOARD_CLEAR, {
-          roomId,
-          username,
-          timestamp: Date.now()
-        });
-      }
-    } catch (error) {
-      console.error('Error clearing canvas:', error);
-      preventBroadcast.current = false;
-    }
-  }, [socket, roomId, username]);
-
-  // Export canvas
-  const exportCanvas = useCallback((format: 'png' | 'svg') => {
-    if (!fabricCanvasRef.current) return;
-
-    try {
-      const canvas = fabricCanvasRef.current;
+      context.beginPath();
+      context.moveTo(lastPointRef.current.x, lastPointRef.current.y);
+      context.lineTo(x, y);
+      context.stroke();
       
-      if (format === 'png') {
-        const dataURL = canvas.toDataURL({
-          multiplier: 2,
-          format: 'png',
-          quality: 1
-        });
-        const link = document.createElement('a');
-        link.download = `whiteboard-${roomId}-${new Date().toISOString().slice(0, 10)}.png`;
-        link.href = dataURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else if (format === 'svg') {
-        const svgData = canvas.toSVG();
-        const blob = new Blob([svgData], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `whiteboard-${roomId}-${new Date().toISOString().slice(0, 10)}.svg`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error('Error exporting canvas:', error);
+      lastPointRef.current = { x, y };
     }
-  }, [roomId]);
+  };
 
-  // Loading state
-  if (isLoading) {
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    if (!canvasRef.current) return;
+    
+    const context = canvasRef.current.getContext('2d');
+    if (context) {
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  };
+
+  const exportCanvas = () => {
+    if (!canvasRef.current) return;
+    
+    const dataURL = canvasRef.current.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `whiteboard-${roomId}-${Date.now()}.png`;
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const predefinedColors = [
+    '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
+    '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#FFC0CB'
+  ];
+
+  if (!isClient) {
     return (
       <div className="flex flex-col h-full bg-base-100">
         <div className="flex items-center justify-center h-full">
-          <div className="loading loading-spinner loading-lg"></div>
-          <span className="ml-4 text-lg">Loading whiteboard...</span>
+          <div className="flex flex-col items-center gap-4">
+            <div className="loading loading-spinner loading-lg"></div>
+            <span className="text-lg">Loading whiteboard...</span>
+          </div>
         </div>
       </div>
     );
@@ -449,9 +157,8 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
       <div className="navbar bg-base-200 min-h-16 px-4 border-b border-base-300">
         <div className="navbar-start">
           <div className="join">
-            {/* Drawing Tools */}
             <button
-              onClick={() => handleToolChange('select')}
+              onClick={() => setSelectedTool('select')}
               className={`btn btn-sm join-item ${selectedTool === 'select' ? 'btn-primary' : 'btn-ghost'}`}
               title="Select"
             >
@@ -459,7 +166,7 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
             </button>
             
             <button
-              onClick={() => handleToolChange('pen')}
+              onClick={() => setSelectedTool('pen')}
               className={`btn btn-sm join-item ${selectedTool === 'pen' ? 'btn-primary' : 'btn-ghost'}`}
               title="Pen"
             >
@@ -467,7 +174,7 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
             </button>
             
             <button
-              onClick={() => handleToolChange('eraser')}
+              onClick={() => setSelectedTool('eraser')}
               className={`btn btn-sm join-item ${selectedTool === 'eraser' ? 'btn-primary' : 'btn-ghost'}`}
               title="Eraser"
             >
@@ -475,24 +182,8 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
             </button>
             
             <button
-              onClick={() => addShape('rectangle')}
-              className="btn btn-sm join-item btn-ghost"
-              title="Rectangle"
-            >
-              <Square className="w-4 h-4" />
-            </button>
-            
-            <button
-              onClick={() => addShape('circle')}
-              className="btn btn-sm join-item btn-ghost"
-              title="Circle"
-            >
-              <Circle className="w-4 h-4" />
-            </button>
-            
-            <button
-              onClick={addText}
-              className="btn btn-sm join-item btn-ghost"
+              onClick={() => setSelectedTool('text')}
+              className={`btn btn-sm join-item ${selectedTool === 'text' ? 'btn-primary' : 'btn-ghost'}`}
               title="Text"
             >
               <Type className="w-4 h-4" />
@@ -517,14 +208,25 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
               </button>
               
               {showColorPicker && (
-                <div className="absolute top-12 left-0 z-50">
-                  <div 
-                    className="fixed inset-0"
-                    onClick={() => setShowColorPicker(false)}
-                  />
-                  <ChromePicker
-                    color={strokeColor}
-                    onChange={(color: any) => setStrokeColor(color.hex)}
+                <div className="absolute top-12 left-0 z-50 bg-base-100 p-2 rounded-lg shadow-lg border border-base-300">
+                  <div className="grid grid-cols-5 gap-2 mb-2">
+                    {predefinedColors.map(color => (
+                      <button
+                        key={color}
+                        className={`w-8 h-8 rounded border-2 ${strokeColor === color ? 'border-primary' : 'border-base-300'}`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => {
+                          setStrokeColor(color);
+                          setShowColorPicker(false);
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <input
+                    type="color"
+                    value={strokeColor}
+                    onChange={(e) => setStrokeColor(e.target.value)}
+                    className="w-full h-8 rounded border border-base-300"
                   />
                 </div>
               )}
@@ -548,20 +250,13 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
         
         <div className="navbar-end">
           <div className="join">
-            {/* Export & Clear */}
-            <div className="dropdown dropdown-top dropdown-end">
-              <button
-                tabIndex={0}
-                className="btn btn-sm join-item btn-ghost"
-                title="Export"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-              <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32">
-                <li><a onClick={() => exportCanvas('png')}>PNG</a></li>
-                <li><a onClick={() => exportCanvas('svg')}>SVG</a></li>
-              </ul>
-            </div>
+            <button
+              onClick={exportCanvas}
+              className="btn btn-sm join-item btn-ghost"
+              title="Export PNG"
+            >
+              <Download className="w-4 h-4" />
+            </button>
             
             <button
               onClick={clearCanvas}
@@ -575,13 +270,15 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
       </div>
       
       {/* Canvas Container */}
-      <div className="flex-1 overflow-auto bg-base-100 p-4">
-        <div className="relative bg-white border border-base-300 rounded-lg shadow-lg inline-block">
-          <canvas
-            ref={canvasRef}
-            className="block"
-          />
-        </div>
+      <div className="flex-1 overflow-hidden bg-white p-4">
+        <canvas
+          ref={canvasRef}
+          className="border border-base-300 rounded cursor-crosshair"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+        />
       </div>
     </div>
   );

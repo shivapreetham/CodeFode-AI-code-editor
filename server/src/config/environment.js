@@ -70,7 +70,6 @@ export const config = {
   
   // AI services configuration
   ai: {
-    cohereApiKey: env.COHERE_API_KEY,
     googleApiKey: env.GOOGLE_AI_API_KEY
   },
   

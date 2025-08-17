@@ -705,7 +705,6 @@ const RoomContent = () => {
             onInsertCode={handleInsertAICode}
             onInsertLineCorrection={handleInsertLineCorrection}
             isDebouncing={isDebouncing}
-            activeFile={activeFile}
             currentCode={filesContentMap.get(activeFile?.path)?.content || activeFile?.content}
           />
         </div>

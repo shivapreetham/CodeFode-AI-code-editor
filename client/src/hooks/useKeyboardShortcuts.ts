@@ -18,15 +18,27 @@ export const useKeyboardShortcuts = ({
 }: UseKeyboardShortcutsProps) => {
   useEffect(() => {
     const handleKeyboardShortcuts = (e: KeyboardEvent) => {
+      // Check if the target is a Monaco editor
+      const target = e.target as HTMLElement;
+      const isMonacoEditor = target?.closest('.monaco-editor') !== null;
+      
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
           case "i":
-            e.preventDefault();
-            onTabChange(4); // AI tab
+            // Only handle if not in Monaco editor (Monaco will handle its own shortcuts)
+            if (!isMonacoEditor) {
+              e.preventDefault();
+              console.log('🎯 Ctrl+I triggered from window (not Monaco)');
+              onTabChange(4); // AI tab
+            }
             break;
           case "c":
-            e.preventDefault();
-            onTabChange(2); // Chat tab
+            // Only handle if not in Monaco editor and no text is selected
+            if (!isMonacoEditor && window.getSelection()?.toString() === '') {
+              e.preventDefault();
+              console.log('🎯 Ctrl+C triggered from window (no selection)');
+              onTabChange(2); // Chat tab
+            }
             break;
           case "n":
             e.preventDefault();

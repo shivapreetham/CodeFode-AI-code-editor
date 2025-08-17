@@ -37,7 +37,9 @@ interface SidebarPanelProps {
   aiError: string | null;
   onManualAITrigger?: () => void;
   onInsertCode?: (code: string) => void;
+  onInsertLineCorrection?: (correction: any) => void;
   isDebouncing?: boolean;
+  currentCode?: string;
 }
 
 const tabLabels = {
@@ -74,7 +76,9 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
   aiError,
   onManualAITrigger,
   onInsertCode,
-  isDebouncing
+  onInsertLineCorrection,
+  isDebouncing,
+  currentCode
 }) => {
   return (
     <div className="flex flex-col h-full">
@@ -139,7 +143,10 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
               error={aiError}
               onManualTrigger={onManualAITrigger}
               onInsertCode={onInsertCode}
+              onInsertLineCorrection={onInsertLineCorrection}
               isDebouncing={isDebouncing}
+              currentCode={currentCode}
+              currentLanguage={activeFile?.language || 'javascript'}
             />
           </div>
         )}
@@ -158,7 +165,7 @@ const SidebarPanel: React.FC<SidebarPanelProps> = ({
             <Whiteboard
               roomId={roomId}
               username={username || 'Anonymous'}
-              socket={socket}
+              socket={socket?.current}
               isActive={activeTab === 6}
             />
           </div>

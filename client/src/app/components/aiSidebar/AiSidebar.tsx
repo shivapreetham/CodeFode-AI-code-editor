@@ -1,35 +1,49 @@
 import React, { useState } from 'react';
-import { Sparkles, Bug, Lightbulb, Code, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
+import { Sparkles, Bug, Lightbulb, Code, ChevronDown, ChevronUp, CheckCircle, Plus, MessageSquare, FileText } from 'lucide-react';
 import CodeBlock from './codeBlock';
+import AiChatPanel from './AiChatPanel';
 
-interface Error {
+interface LineCorrection {
   title: string;
-  line: string;
-  code: string;
-  fixedCode: string;
-  description: string;
+  startLine: number;
+  endLine: number;
+  severity: 'error' | 'warning' | 'info';
+  originalCode: string;
+  correctedCode: string;
+  explanation: string;
 }
 
 interface Suggestion {
   title: string;
+  targetLines?: number[];
   code: string;
   explanation: string;
 }
 
 interface Practice {
   title: string;
+  appliesTo: 'function' | 'variable' | 'structure' | 'general';
   code: string;
   explanation: string;
 }
 
+interface CodeQuality {
+  score: number;
+  issues: string[];
+  suggestions: string[];
+}
+
 interface AIResponse {
-  errors: Error[];
+  lineCorrections: LineCorrection[];
   suggestions: Suggestion[];
   bestPractices: Practice[];
+  codeQuality: CodeQuality;
   metadata?: {
     language: string;
     codeLength: number;
+    totalLines: number;
     processedAt: string;
+    aiModel: string;
   };
 }
 
@@ -40,7 +54,10 @@ interface AISuggestionsSidebarProps {
   error?: string | null;
   onManualTrigger?: () => void;
   onInsertCode?: (code: string) => void;
+  onInsertLineCorrection?: (correction: LineCorrection) => void;
   isDebouncing?: boolean;
+  currentCode?: string;
+  currentLanguage?: string;
 }
 
 interface SectionProps {
@@ -53,7 +70,7 @@ interface SectionProps {
 }
 
 interface ExpandedSections {
-  errors: boolean;
+  lineCorrections: boolean;
   suggestions: boolean;
   practices: boolean;
 }
@@ -65,18 +82,23 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
   error,
   onManualTrigger,
   onInsertCode,
-  isDebouncing
+  onInsertLineCorrection,
+  isDebouncing,
+  currentCode,
+  currentLanguage
 }) => {
   if (aiResponse) {
     console.log('🎆 AI Results:', {
-      errors: aiResponse.errors?.length || 0,
+      lineCorrections: aiResponse.lineCorrections?.length || 0,
       suggestions: aiResponse.suggestions?.length || 0,
-      practices: aiResponse.bestPractices?.length || 0
+      practices: aiResponse.bestPractices?.length || 0,
+      qualityScore: aiResponse.codeQuality?.score || 0
     });
   }
   
+  const [activeTab, setActiveTab] = useState<'analysis' | 'chat'>('analysis');
   const [expandedSections, setExpandedSections] = useState<ExpandedSections>({
-    errors: true,
+    lineCorrections: true,
     suggestions: true,
     practices: true
   });
@@ -122,12 +144,13 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
 
   return (
     <div className="panel-content">
+      {/* Header with tabs */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
-          <h2 className="text-lg font-semibold">AI Code Analysis</h2>
+          <h2 className="text-lg font-semibold">AI Assistant</h2>
         </div>
-        {onManualTrigger && (
+        {activeTab === 'analysis' && onManualTrigger && (
           <button
             onClick={onManualTrigger}
             disabled={isLoading}
@@ -138,13 +161,41 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
         )}
       </div>
 
+      {/* Tab Navigation */}
+      <div className="tabs tabs-boxed mb-4">
+        <button
+          className={`tab ${activeTab === 'analysis' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('analysis')}
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Code Analysis
+        </button>
+        <button
+          className={`tab ${activeTab === 'chat' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('chat')}
+        >
+          <MessageSquare className="w-4 h-4 mr-2" />
+          AI Chat
+        </button>
+      </div>
+
+      {/* Tab Content */}
       <div className="max-w-full">
-        {error ? (
-          <div className="alert alert-error">
-            <Bug className="w-6 h-6" />
-            <span>{error}</span>
-          </div>
-        ) : isLoading ? (
+        {activeTab === 'chat' ? (
+          <AiChatPanel
+            currentCode={currentCode}
+            currentLanguage={currentLanguage}
+            onInsertCode={onInsertCode}
+          />
+        ) : (
+          // Code Analysis Tab
+          <>
+            {error ? (
+              <div className="alert alert-error">
+                <Bug className="w-6 h-6" />
+                <span>{error}</span>
+              </div>
+            ) : isLoading ? (
           <div className="flex flex-col items-center justify-center p-8 space-y-4">
             <span className="loading loading-spinner loading-lg text-primary"></span>
             <p>Analyzing your code...</p>
@@ -156,34 +207,91 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
           </div>
         ) : aiResponse ? (
           <div className="space-y-6">
-            {aiResponse.errors && aiResponse.errors.length > 0 && (
+            {/* Code Quality Score */}
+            {aiResponse.codeQuality && (
+              <div className="bg-base-200 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Code Quality Score</span>
+                  <span className={`text-lg font-bold ${
+                    aiResponse.codeQuality.score >= 80 ? 'text-success' : 
+                    aiResponse.codeQuality.score >= 60 ? 'text-warning' : 'text-error'
+                  }`}>
+                    {aiResponse.codeQuality.score}/100
+                  </span>
+                </div>
+                <div className="w-full bg-base-300 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${
+                      aiResponse.codeQuality.score >= 80 ? 'bg-success' : 
+                      aiResponse.codeQuality.score >= 60 ? 'bg-warning' : 'bg-error'
+                    }`}
+                    style={{ width: `${aiResponse.codeQuality.score}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            {/* Line-Specific Corrections */}
+            {aiResponse.lineCorrections && aiResponse.lineCorrections.length > 0 && (
               <Section
-                title={`Issues Found (${aiResponse.errors.length})`}
+                title={`Line Corrections (${aiResponse.lineCorrections.length})`}
                 icon={Bug}
                 type="error"
-                isExpanded={expandedSections.errors}
-                onToggle={() => toggleSection('errors')}
+                isExpanded={expandedSections.lineCorrections}
+                onToggle={() => toggleSection('lineCorrections')}
               >
-                {aiResponse.errors.map((error, idx) => (
-                  <div key={idx} className="space-y-2">
-                    <h4 className="text-red-400 font-medium">{error.title}</h4>
-                    <p className="text-sm text-zinc-400">Line: {error.line}</p>
+                {aiResponse.lineCorrections.map((correction, idx) => (
+                  <div key={idx} className="space-y-3 border border-base-300 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className={`font-medium ${
+                        correction.severity === 'error' ? 'text-error' :
+                        correction.severity === 'warning' ? 'text-warning' : 'text-info'
+                      }`}>
+                        {correction.title}
+                      </h4>
+                      <span className={`badge ${
+                        correction.severity === 'error' ? 'badge-error' :
+                        correction.severity === 'warning' ? 'badge-warning' : 'badge-info'
+                      }`}>
+                        {correction.severity}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-base-content/70">
+                      Lines {correction.startLine}-{correction.endLine}
+                    </p>
+                    
+                    <p className="text-sm">{correction.explanation}</p>
+                    
+                    {/* Original Code */}
                     <div className="space-y-1">
-                      <p className="text-sm text-zinc-300">{error.description}</p>
-                      <div className="bg-red-900/20 p-2 rounded border border-red-500/30">
-                        <p className="text-sm text-red-400 font-mono">{error.code}</p>
+                      <p className="text-xs text-error font-medium">Original:</p>
+                      <div className="bg-error/10 p-2 rounded border border-error/30">
+                        <pre className="text-sm text-error font-mono whitespace-pre-wrap">
+                          {correction.originalCode}
+                        </pre>
                       </div>
-                      <div className="bg-green-900/20 p-2 rounded border border-green-500/30 relative">
-                        <p className="text-sm text-green-400 font-mono">{error.fixedCode}</p>
-                        {onInsertCode && (
+                    </div>
+                    
+                    {/* Corrected Code */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-success font-medium">Corrected:</p>
+                        {onInsertLineCorrection && (
                           <button
-                            onClick={() => onInsertCode(error.fixedCode)}
-                            className="btn btn-success btn-xs absolute top-2 right-2"
-                            title="Insert this code"
+                            onClick={() => onInsertLineCorrection(correction)}
+                            className="btn btn-success btn-xs"
+                            title="Apply this correction to specific lines"
                           >
                             <Plus className="w-3 h-3" />
+                            Fix Lines {correction.startLine}-{correction.endLine}
                           </button>
                         )}
+                      </div>
+                      <div className="bg-success/10 p-2 rounded border border-success/30">
+                        <pre className="text-sm text-success font-mono whitespace-pre-wrap">
+                          {correction.correctedCode}
+                        </pre>
                       </div>
                     </div>
                   </div>
@@ -200,9 +308,9 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
                 onToggle={() => toggleSection('suggestions')}
               >
                 {aiResponse.suggestions.map((suggestion, idx) => (
-                  <div key={idx} className="space-y-2">
+                  <div key={idx} className="space-y-2 border border-base-300 rounded-lg p-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-blue-400 font-medium">{suggestion.title}</h4>
+                      <h4 className="text-info font-medium">{suggestion.title}</h4>
                       {onInsertCode && suggestion.code && (
                         <button
                           onClick={() => onInsertCode(suggestion.code)}
@@ -214,8 +322,15 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
                         </button>
                       )}
                     </div>
+                    
+                    {suggestion.targetLines && suggestion.targetLines.length > 0 && (
+                      <p className="text-sm text-base-content/70">
+                        Recommended for lines: {suggestion.targetLines.join(', ')}
+                      </p>
+                    )}
+                    
                     <CodeBlock code={suggestion.code} />
-                    <p className="text-sm text-zinc-300">{suggestion.explanation}</p>
+                    <p className="text-sm text-base-content/80">{suggestion.explanation}</p>
                   </div>
                 ))}
               </Section>
@@ -267,6 +382,8 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
             <Code className="w-8 h-8 text-green-400" />
             <p>Start coding to get AI-powered suggestions</p>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

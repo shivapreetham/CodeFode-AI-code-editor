@@ -16,6 +16,7 @@ import {
   Move
 } from 'lucide-react';
 import { ChromePicker } from 'react-color';
+import { ACTIONS } from '@/app/helpers/Actions';
 
 interface WhiteboardProps {
   roomId: string;
@@ -42,248 +43,357 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
   const [zoom, setZoom] = useState(1);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
-  // Initialize Fabric.js canvas
+  // Flag to prevent event loops
+  const preventBroadcast = useRef(false);
+
+  // Initialize Fabric.js canvas with proper error handling
   useEffect(() => {
     if (!canvasRef.current || fabricCanvasRef.current) return;
 
-    const canvas = new fabric.Canvas(canvasRef.current, {
-      width: 1200,
-      height: 800,
-      backgroundColor: '#ffffff',
-      selection: selectedTool === 'select'
-    });
+    let canvas: fabric.Canvas;
 
-    fabricCanvasRef.current = canvas;
+    try {
+      // Create canvas with optimized settings
+      canvas = new fabric.Canvas(canvasRef.current, {
+        width: 1200,
+        height: 800,
+        backgroundColor: '#ffffff',
+        selection: false,
+        preserveObjectStacking: true,
+        renderOnAddRemove: true,
+        skipTargetFind: false,
+        allowTouchScrolling: false
+      });
 
-    // Set up canvas events
-    setupCanvasEvents(canvas);
+      fabricCanvasRef.current = canvas;
 
-    return () => {
-      canvas.dispose();
-      fabricCanvasRef.current = null;
-    };
+      // Basic canvas event handlers
+      canvas.on('mouse:down', () => setIsDrawing(true));
+      canvas.on('mouse:up', () => setIsDrawing(false));
+
+      // Set initial state
+      setIsReady(true);
+      setIsLoading(false);
+
+      console.log('✅ Canvas initialized successfully');
+
+      return () => {
+        try {
+          if (canvas) {
+            canvas.dispose();
+          }
+        } catch (error) {
+          console.error('Error disposing canvas:', error);
+        }
+        fabricCanvasRef.current = null;
+      };
+    } catch (error) {
+      console.error('❌ Canvas initialization failed:', error);
+      setIsLoading(false);
+    }
   }, []);
 
-  // Update canvas selection mode when tool changes
+  // Handle tool configuration when canvas is ready
   useEffect(() => {
-    if (fabricCanvasRef.current) {
-      fabricCanvasRef.current.selection = selectedTool === 'select';
-      fabricCanvasRef.current.isDrawingMode = selectedTool === 'pen';
-      
-      if (selectedTool === 'pen' && fabricCanvasRef.current.freeDrawingBrush) {
-        fabricCanvasRef.current.freeDrawingBrush.width = strokeWidth;
-        fabricCanvasRef.current.freeDrawingBrush.color = strokeColor;
+    if (!fabricCanvasRef.current || !isReady) return;
+
+    const canvas = fabricCanvasRef.current;
+
+    try {
+      // Configure tool settings
+      canvas.selection = selectedTool === 'select';
+      canvas.isDrawingMode = selectedTool === 'pen' || selectedTool === 'eraser';
+
+      if (canvas.isDrawingMode && canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.width = selectedTool === 'eraser' ? strokeWidth * 2 : strokeWidth;
+        canvas.freeDrawingBrush.color = selectedTool === 'eraser' ? '#ffffff' : strokeColor;
       }
+
+      canvas.renderAll();
+    } catch (error) {
+      console.error('Error configuring tool:', error);
     }
-  }, [selectedTool, strokeWidth, strokeColor]);
+  }, [selectedTool, strokeWidth, strokeColor, isReady]);
 
-  const setupCanvasEvents = useCallback((canvas: fabric.Canvas) => {
-    // Drawing events
-    canvas.on('path:created', (e: any) => {
-      if (socket && selectedTool === 'pen') {
-        const pathData = e.path?.toObject();
-        socket.emit('whiteboard:draw', {
-          roomId,
-          username,
-          type: 'path',
-          data: pathData,
-          timestamp: Date.now()
-        });
+  // Set up real-time collaboration events
+  useEffect(() => {
+    if (!fabricCanvasRef.current || !socket || !isReady) return;
+
+    const canvas = fabricCanvasRef.current;
+
+    // Handle path created (drawing)
+    const handlePathCreated = (e: fabric.IEvent) => {
+      if (preventBroadcast.current) return;
+
+      try {
+        const path = e.path;
+        if (path && socket) {
+          socket.emit(ACTIONS.WHITEBOARD_DRAW, {
+            roomId,
+            username,
+            type: 'path',
+            data: path.toObject(),
+            timestamp: Date.now()
+          });
+        }
+      } catch (error) {
+        console.error('Error broadcasting path:', error);
       }
-      saveToHistory();
-    });
+    };
 
-    canvas.on('object:added', (e: any) => {
-      if (e.target && socket && selectedTool !== 'pen') {
-        const objectData = e.target.toObject();
-        socket.emit('whiteboard:draw', {
-          roomId,
-          username,
-          type: 'object',
-          data: objectData,
-          timestamp: Date.now()
-        });
+    // Handle object added (shapes, text)
+    const handleObjectAdded = (e: fabric.IEvent) => {
+      if (preventBroadcast.current || !e.target) return;
+
+      try {
+        if (socket && selectedTool !== 'pen') {
+          socket.emit(ACTIONS.WHITEBOARD_DRAW, {
+            roomId,
+            username,
+            type: 'object',
+            data: e.target.toObject(),
+            timestamp: Date.now()
+          });
+        }
+      } catch (error) {
+        console.error('Error broadcasting object:', error);
       }
-    });
+    };
 
-    // Mouse events for tracking
-    canvas.on('mouse:move', (e: any) => {
-      if (socket && isActive) {
-        const pointer = canvas.getPointer(e.e);
-        socket.emit('mouse:pointer_move', {
+    // Mouse tracking for collaborative cursors
+    const handleMouseMove = (e: fabric.IEvent) => {
+      if (!socket || !isActive) return;
+
+      try {
+        const pointer = canvas.getPointer(e.e as MouseEvent);
+        socket.emit(ACTIONS.MOUSE_POINTER_MOVE, {
           roomId,
           username,
           x: pointer.x,
           y: pointer.y,
           timestamp: Date.now()
         });
+      } catch (error) {
+        console.error('Error tracking mouse:', error);
       }
-    });
+    };
 
-    canvas.on('mouse:down', () => setIsDrawing(true));
-    canvas.on('mouse:up', () => setIsDrawing(false));
+    // Attach event listeners
+    canvas.on('path:created', handlePathCreated);
+    canvas.on('object:added', handleObjectAdded);
+    canvas.on('mouse:move', handleMouseMove);
 
-  }, [socket, roomId, username, selectedTool, isActive]);
-
-  const saveToHistory = useCallback(() => {
-    if (fabricCanvasRef.current) {
-      const canvasState = JSON.stringify(fabricCanvasRef.current.toJSON());
-      setHistory(prev => {
-        const newHistory = prev.slice(0, historyIndex + 1);
-        newHistory.push(canvasState);
-        return newHistory.slice(-20); // Keep last 20 states
-      });
-      setHistoryIndex(prev => prev + 1);
+    // Load existing whiteboard data
+    if (socket) {
+      socket.emit(ACTIONS.WHITEBOARD_LOAD, { roomId });
     }
-  }, [historyIndex]);
 
-  const handleToolChange = (tool: DrawingTool) => {
+    return () => {
+      // Clean up event listeners
+      canvas.off('path:created', handlePathCreated);
+      canvas.off('object:added', handleObjectAdded);
+      canvas.off('mouse:move', handleMouseMove);
+    };
+  }, [socket, roomId, username, selectedTool, isActive, isReady]);
+
+  // Handle incoming collaborative events
+  useEffect(() => {
+    if (!socket || !fabricCanvasRef.current || !isReady) return;
+
+    const canvas = fabricCanvasRef.current;
+
+    const handleRemoteWhiteboardDraw = (data: any) => {
+      if (data.username === username) return; // Ignore own events
+
+      try {
+        preventBroadcast.current = true;
+
+        if (data.type === 'path') {
+          fabric.Path.fromObject(data.data, (path: fabric.Path) => {
+            canvas.add(path);
+            canvas.renderAll();
+            preventBroadcast.current = false;
+          });
+        } else if (data.type === 'object') {
+          fabric.util.enlivenObjects([data.data], (objects: fabric.Object[]) => {
+            objects.forEach(obj => canvas.add(obj));
+            canvas.renderAll();
+            preventBroadcast.current = false;
+          });
+        } else {
+          preventBroadcast.current = false;
+        }
+      } catch (error) {
+        console.error('Error handling remote draw:', error);
+        preventBroadcast.current = false;
+      }
+    };
+
+    const handleRemoteWhiteboardClear = (data: any) => {
+      if (data.username === username) return; // Ignore own events
+
+      try {
+        preventBroadcast.current = true;
+        canvas.clear();
+        canvas.backgroundColor = '#ffffff';
+        canvas.renderAll();
+        preventBroadcast.current = false;
+      } catch (error) {
+        console.error('Error handling remote clear:', error);
+        preventBroadcast.current = false;
+      }
+    };
+
+    socket.on(ACTIONS.WHITEBOARD_DRAW, handleRemoteWhiteboardDraw);
+    socket.on(ACTIONS.WHITEBOARD_CLEAR, handleRemoteWhiteboardClear);
+
+    return () => {
+      socket.off(ACTIONS.WHITEBOARD_DRAW, handleRemoteWhiteboardDraw);
+      socket.off(ACTIONS.WHITEBOARD_CLEAR, handleRemoteWhiteboardClear);
+    };
+  }, [socket, username, isReady]);
+
+  // Tool change handler
+  const handleToolChange = useCallback((tool: DrawingTool) => {
     setSelectedTool(tool);
-    
-    if (fabricCanvasRef.current) {
+  }, []);
+
+  // Add shape
+  const addShape = useCallback((shapeType: 'rectangle' | 'circle') => {
+    if (!fabricCanvasRef.current) return;
+
+    try {
+      const canvas = fabricCanvasRef.current;
+      let shape: fabric.Object;
+
+      if (shapeType === 'rectangle') {
+        shape = new fabric.Rect({
+          left: 100,
+          top: 100,
+          width: 100,
+          height: 80,
+          fill: 'transparent',
+          stroke: strokeColor,
+          strokeWidth: strokeWidth
+        });
+      } else {
+        shape = new fabric.Circle({
+          left: 100,
+          top: 100,
+          radius: 50,
+          fill: 'transparent',
+          stroke: strokeColor,
+          strokeWidth: strokeWidth
+        });
+      }
+
+      canvas.add(shape);
+      canvas.setActiveObject(shape);
+      canvas.renderAll();
+    } catch (error) {
+      console.error('Error adding shape:', error);
+    }
+  }, [strokeColor, strokeWidth]);
+
+  // Add text
+  const addText = useCallback(() => {
+    if (!fabricCanvasRef.current) return;
+
+    try {
+      const canvas = fabricCanvasRef.current;
+      const text = new fabric.IText('Click to edit', {
+        left: 100,
+        top: 100,
+        fontSize: 20,
+        fill: strokeColor,
+        fontFamily: 'Arial'
+      });
+
+      canvas.add(text);
+      canvas.setActiveObject(text);
+      canvas.renderAll();
+    } catch (error) {
+      console.error('Error adding text:', error);
+    }
+  }, [strokeColor]);
+
+  // Clear canvas
+  const clearCanvas = useCallback(() => {
+    if (!fabricCanvasRef.current) return;
+
+    try {
       const canvas = fabricCanvasRef.current;
       
-      // Reset modes
-      canvas.isDrawingMode = false;
-      canvas.selection = false;
-      
-      switch (tool) {
-        case 'pen':
-          canvas.isDrawingMode = true;
-          if (canvas.freeDrawingBrush) {
-            canvas.freeDrawingBrush.width = strokeWidth;
-            canvas.freeDrawingBrush.color = strokeColor;
-          }
-          break;
-        case 'select':
-          canvas.selection = true;
-          break;
-        case 'eraser':
-          canvas.isDrawingMode = true;
-          if (canvas.freeDrawingBrush) {
-            canvas.freeDrawingBrush.width = strokeWidth * 2;
-            canvas.freeDrawingBrush.color = '#ffffff'; // Same as background
-          }
-          break;
-      }
-    }
-  };
+      preventBroadcast.current = true;
+      canvas.clear();
+      canvas.backgroundColor = '#ffffff';
+      canvas.renderAll();
+      preventBroadcast.current = false;
 
-  const addShape = (shapeType: 'rectangle' | 'circle') => {
-    if (!fabricCanvasRef.current) return;
-
-    const canvas = fabricCanvasRef.current;
-    let shape: fabric.Object;
-
-    if (shapeType === 'rectangle') {
-      shape = new fabric.Rect({
-        left: 100,
-        top: 100,
-        width: 100,
-        height: 80,
-        fill: 'transparent',
-        stroke: strokeColor,
-        strokeWidth: strokeWidth
-      });
-    } else {
-      shape = new fabric.Circle({
-        left: 100,
-        top: 100,
-        radius: 50,
-        fill: 'transparent',
-        stroke: strokeColor,
-        strokeWidth: strokeWidth
-      });
-    }
-
-    canvas.add(shape);
-    canvas.setActiveObject(shape);
-    saveToHistory();
-  };
-
-  const addText = () => {
-    if (!fabricCanvasRef.current) return;
-
-    const canvas = fabricCanvasRef.current;
-    const text = new fabric.IText('Click to edit', {
-      left: 100,
-      top: 100,
-      fontSize: 20,
-      fill: strokeColor,
-      fontFamily: 'Arial'
-    });
-
-    canvas.add(text);
-    canvas.setActiveObject(text);
-    saveToHistory();
-  };
-
-  const handleUndo = () => {
-    if (historyIndex > 0 && fabricCanvasRef.current) {
-      const prevState = history[historyIndex - 1];
-      fabricCanvasRef.current.loadFromJSON(prevState, () => {
-        fabricCanvasRef.current?.renderAll();
-      });
-      setHistoryIndex(prev => prev - 1);
-    }
-  };
-
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1 && fabricCanvasRef.current) {
-      const nextState = history[historyIndex + 1];
-      fabricCanvasRef.current.loadFromJSON(nextState, () => {
-        fabricCanvasRef.current?.renderAll();
-      });
-      setHistoryIndex(prev => prev + 1);
-    }
-  };
-
-  const handleZoom = (direction: 'in' | 'out') => {
-    if (!fabricCanvasRef.current) return;
-
-    const canvas = fabricCanvasRef.current;
-    const newZoom = direction === 'in' ? zoom * 1.1 : zoom / 1.1;
-    const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
-    
-    canvas.setZoom(clampedZoom);
-    setZoom(clampedZoom);
-  };
-
-  const clearCanvas = () => {
-    if (fabricCanvasRef.current) {
-      fabricCanvasRef.current.clear();
-      fabricCanvasRef.current.backgroundColor = '#ffffff';
-      
+      // Broadcast clear event
       if (socket) {
-        socket.emit('whiteboard:clear', {
+        socket.emit(ACTIONS.WHITEBOARD_CLEAR, {
           roomId,
           username,
           timestamp: Date.now()
         });
       }
-      
-      saveToHistory();
+    } catch (error) {
+      console.error('Error clearing canvas:', error);
+      preventBroadcast.current = false;
     }
-  };
+  }, [socket, roomId, username]);
 
-  const exportCanvas = (format: 'png' | 'svg' | 'pdf') => {
+  // Export canvas
+  const exportCanvas = useCallback((format: 'png' | 'svg') => {
     if (!fabricCanvasRef.current) return;
 
-    const canvas = fabricCanvasRef.current;
-    
-    if (format === 'png') {
-      const dataURL = canvas.toDataURL({
-        multiplier: 1,
-        format: 'png' as any
-      });
-      const link = document.createElement('a');
-      link.download = `whiteboard-${roomId}-${Date.now()}.png`;
-      link.href = dataURL;
-      link.click();
+    try {
+      const canvas = fabricCanvasRef.current;
+      
+      if (format === 'png') {
+        const dataURL = canvas.toDataURL({
+          multiplier: 2,
+          format: 'png',
+          quality: 1
+        });
+        const link = document.createElement('a');
+        link.download = `whiteboard-${roomId}-${new Date().toISOString().slice(0, 10)}.png`;
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (format === 'svg') {
+        const svgData = canvas.toSVG();
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `whiteboard-${roomId}-${new Date().toISOString().slice(0, 10)}.svg`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error exporting canvas:', error);
     }
-    // TODO: Implement SVG and PDF export
-  };
+  }, [roomId]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-base-100">
+        <div className="flex items-center justify-center h-full">
+          <div className="loading loading-spinner loading-lg"></div>
+          <span className="ml-4 text-lg">Loading whiteboard...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-base-100">
@@ -390,54 +500,20 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
         
         <div className="navbar-end">
           <div className="join">
-            {/* History Controls */}
-            <button
-              onClick={handleUndo}
-              disabled={historyIndex <= 0}
-              className="btn btn-sm join-item btn-ghost"
-              title="Undo"
-            >
-              <Undo className="w-4 h-4" />
-            </button>
-            
-            <button
-              onClick={handleRedo}
-              disabled={historyIndex >= history.length - 1}
-              className="btn btn-sm join-item btn-ghost"
-              title="Redo"
-            >
-              <Redo className="w-4 h-4" />
-            </button>
-            
-            {/* Zoom Controls */}
-            <button
-              onClick={() => handleZoom('out')}
-              className="btn btn-sm join-item btn-ghost"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            
-            <span className="btn btn-sm join-item btn-ghost cursor-default">
-              {Math.round(zoom * 100)}%
-            </span>
-            
-            <button
-              onClick={() => handleZoom('in')}
-              className="btn btn-sm join-item btn-ghost"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            
             {/* Export & Clear */}
-            <button
-              onClick={() => exportCanvas('png')}
-              className="btn btn-sm join-item btn-ghost"
-              title="Export PNG"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+            <div className="dropdown dropdown-top dropdown-end">
+              <button
+                tabIndex={0}
+                className="btn btn-sm join-item btn-ghost"
+                title="Export"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+              <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32">
+                <li><a onClick={() => exportCanvas('png')}>PNG</a></li>
+                <li><a onClick={() => exportCanvas('svg')}>SVG</a></li>
+              </ul>
+            </div>
             
             <button
               onClick={clearCanvas}

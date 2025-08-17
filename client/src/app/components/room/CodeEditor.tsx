@@ -20,6 +20,7 @@ interface CodeEditorProps {
   showNotes?: boolean;
   notes?: string;
   onNotesChange?: (notes: string) => void;
+  onTabChange?: (tabId: number) => void;
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -38,7 +39,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onToggleNotes,
   showNotes = false,
   notes = '',
-  onNotesChange
+  onNotesChange,
+  onTabChange
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -69,6 +71,25 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         }
 
         return null;
+      }
+    });
+
+    // Add keyboard shortcuts that work when editor is focused
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, () => {
+      console.log('🎯 Ctrl+I triggered from Monaco editor');
+      if (onTabChange) {
+        onTabChange(4); // Switch to AI Assistant tab
+      }
+    });
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
+      // Only trigger if no text is selected (avoid interfering with copy)
+      const selection = editor.getSelection();
+      if (selection && selection.isEmpty()) {
+        console.log('🎯 Ctrl+C triggered from Monaco editor (no selection)');
+        if (onTabChange) {
+          onTabChange(2); // Switch to Chat tab
+        }
       }
     });
 

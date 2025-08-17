@@ -61,6 +61,10 @@ const RoomContent = () => {
   const [showVisualization, setShowVisualization] = useState(false);
   const [aiInlineSuggestions, setAiInlineSuggestions] = useState<string[]>([]);
   const [editingSessions, setEditingSessions] = useState<Map<string, { startTime: number, filePath: string }>>(new Map());
+  const [isResizing, setIsResizing] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startWidth, setStartWidth] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Room state management using centralized context
   const {
@@ -76,6 +80,7 @@ const RoomContent = () => {
     codeStatus,
     notifications,
     isCollapsed,
+    sidebarWidth,
     filesContentMap,
     setClients,
     setActiveFile,
@@ -83,6 +88,7 @@ const RoomContent = () => {
     setFileExplorerData,
     setIsFileExplorerUpdated,
     setNotifications,
+    setSidebarWidth,
     toggleSidebar,
     handleTabChange,
     handleToggleOutputVisibility,
@@ -297,6 +303,54 @@ const RoomContent = () => {
     };
   }, [isInitialized, socketRef, setClients, setMessages, setNotifications, handleCursorChange, handleCodeChange, handleCodeResult, username]);
 
+  // Sidebar resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    setStartX(e.clientX);
+    setStartWidth(sidebarWidth);
+  }, [sidebarWidth]);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    e.preventDefault();
+    
+    const deltaX = e.clientX - startX;
+    const newWidth = Math.max(200, Math.min(600, startWidth + deltaX)); // Min 200px, Max 600px
+    setSidebarWidth(newWidth);
+  }, [isResizing, startX, startWidth, setSidebarWidth]);
+
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  // Add global mouse event listeners for resize
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.classList.add('resizing');
+      
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+        document.body.classList.remove('resizing');
+      };
+    }
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+  // Check if mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onTabChange: handleTabChange,
@@ -471,6 +525,69 @@ const RoomContent = () => {
     }
   }, []);
 
+  // Handle inserting line-specific AI corrections
+  const handleInsertLineCorrection = useCallback((correction: any) => {
+    if (!editorRef.current || !monacoRef.current) {
+      console.warn('Editor not available for line correction');
+      return;
+    }
+
+    try {
+      const editor = editorRef.current;
+      const model = editor.getModel();
+      
+      if (!model) {
+        console.warn('Editor model not available');
+        return;
+      }
+
+      // Create range for the specific lines to be replaced
+      const startLine = correction.startLine;
+      const endLine = correction.endLine;
+      
+      // Validate line numbers
+      const totalLines = model.getLineCount();
+      if (startLine < 1 || endLine > totalLines || startLine > endLine) {
+        toast.error(`Invalid line range: ${startLine}-${endLine}. File has ${totalLines} lines.`);
+        return;
+      }
+
+      // Get the range to replace (entire lines)
+      const range = new monacoRef.current.Range(
+        startLine, 1, // Start of first line
+        endLine, model.getLineMaxColumn(endLine) // End of last line
+      );
+
+      // Apply the correction
+      editor.executeEdits('apply-line-correction', [{
+        range: range,
+        text: correction.correctedCode,
+        forceMoveMarkers: true
+      }]);
+
+      // Move cursor to the corrected area
+      const newPosition = new monacoRef.current.Position(startLine, 1);
+      editor.setPosition(newPosition);
+      editor.revealPosition(newPosition);
+
+      // Focus the editor
+      editor.focus();
+
+      // Show success toast with specific line info
+      toast.success(`Applied correction to lines ${startLine}-${endLine}!`);
+      
+      console.log('Line correction applied:', {
+        lines: `${startLine}-${endLine}`,
+        title: correction.title,
+        severity: correction.severity
+      });
+      
+    } catch (error) {
+      console.error('Error applying line correction:', error);
+      toast.error('Failed to apply line correction');
+    }
+  }, []);
+
   // Loading state - handled by RoomContext
   if (!isInitialized) {
     return (
@@ -550,7 +667,18 @@ const RoomContent = () => {
         />
 
         {/* Sidebar Panel */}
-        <div className="vscode-sidebar-panel">
+        <div 
+          className="vscode-sidebar-panel"
+          style={isMobile ? {
+            width: '320px',
+            minWidth: '320px',
+            maxWidth: '320px'
+          } : { 
+            width: `${sidebarWidth}px`,
+            minWidth: `${sidebarWidth}px`,
+            maxWidth: `${sidebarWidth}px`
+          }}
+        >
           <SidebarPanel
             activeTab={activeTab}
             isCollapsed={isCollapsed}
@@ -575,9 +703,37 @@ const RoomContent = () => {
             aiError={aiError}
             onManualAITrigger={handleManualAITrigger}
             onInsertCode={handleInsertAICode}
+            onInsertLineCorrection={handleInsertLineCorrection}
             isDebouncing={isDebouncing}
+            activeFile={activeFile}
+            currentCode={filesContentMap.get(activeFile?.path)?.content || activeFile?.content}
           />
         </div>
+
+        {/* Resize Handle */}
+        {!isCollapsed && !isMobile && (
+          <div
+            className="resize-handle"
+            onMouseDown={handleResizeStart}
+            style={{
+              width: '4px',
+              cursor: 'col-resize',
+              backgroundColor: 'hsl(var(--b3))',
+              borderLeft: '1px solid hsl(var(--b3))',
+              borderRight: '1px solid hsl(var(--b3))',
+              position: 'relative',
+              zIndex: 10,
+              minHeight: '100vh',
+              transition: 'background-color 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'hsl(var(--b3))';
+            }}
+          />
+        )}
 
         {/* Main Editor Area */}
         <div className="vscode-main-area">
@@ -608,6 +764,7 @@ const RoomContent = () => {
               showNotes={showNotes}
               notes={notes.get(activeFile?.path || '') || ''}
               onNotesChange={handleNotesChange}
+              onTabChange={handleTabChange}
             />
           </div>
 

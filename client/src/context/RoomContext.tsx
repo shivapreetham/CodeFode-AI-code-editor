@@ -52,6 +52,7 @@ interface RoomContextType {
   codeStatus: string;
   notifications: Notification[];
   isCollapsed: boolean;
+  sidebarWidth: number;
   filesContentMap: Map<string, IFile>;
 
   // Setters
@@ -61,6 +62,7 @@ interface RoomContextType {
   setFileExplorerData: React.Dispatch<React.SetStateAction<IFileExplorerNode>>;
   setIsFileExplorerUpdated: React.Dispatch<React.SetStateAction<boolean>>;
   setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
+  setSidebarWidth: React.Dispatch<React.SetStateAction<number>>;
 
   // Handlers
   toggleSidebar: () => void;
@@ -134,6 +136,13 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
   const [codeStatus, setCodeStatus] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('codeFodeSidebarWidth');
+      return saved ? parseInt(saved, 10) : 350;
+    }
+    return 350;
+  });
 
   // Initialize default file in map
   useEffect(() => {
@@ -142,13 +151,20 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
     }
   }, []);
 
+  // Save sidebar width to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('codeFodeSidebarWidth', sidebarWidth.toString());
+    }
+  }, [sidebarWidth]);
+
   // Socket initialization - separate from workspace loading
   useEffect(() => {
     const initSocketConnection = async () => {
       
       try {
         // Initialize socket
-        socketRef.current = await initSocket();
+        socketRef.current = initSocket();
         console.log('✅ Socket instance created');
         
         // Set up socket connection handlers with enhanced error handling
@@ -675,6 +691,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
     codeStatus,
     notifications,
     isCollapsed,
+    sidebarWidth,
     filesContentMap,
 
     // Setters
@@ -684,6 +701,7 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
     setFileExplorerData,
     setIsFileExplorerUpdated,
     setNotifications,
+    setSidebarWidth,
 
     // Handlers
     toggleSidebar,

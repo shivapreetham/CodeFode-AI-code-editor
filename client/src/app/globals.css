@@ -83,19 +83,17 @@ body {
   border-radius: 2px;
 }
 
-/* Sidebar Panel - Expandable panel */
+/* Sidebar Panel - Resizable panel */
 .vscode-sidebar-panel {
-  width: 350px;
-  min-width: 350px;
-  max-width: 350px;
   height: 100vh;
   background: hsl(var(--b2));
   border-right: 1px solid hsl(var(--b3));
   display: flex;
   flex-direction: column;
   z-index: 50;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
   transform: translateX(0);
+  flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -257,14 +255,45 @@ body {
   100% { transform: rotate(360deg); }
 }
 
+/* Resize Handle */
+.resize-handle {
+  position: relative;
+  z-index: 10;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 20px;
+  background: currentColor;
+  opacity: 0.3;
+  border-radius: 1px;
+}
+
+.resize-handle:hover::after {
+  opacity: 0.8;
+}
+
+/* Resizing state styles */
+body.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.resizing * {
+  pointer-events: none !important;
+}
+
+body.resizing .resize-handle {
+  pointer-events: auto !important;
+}
+
 /* Responsive Utilities */
 @media (max-width: 768px) {
-  .vscode-sidebar-panel {
-    width: 320px;
-    min-width: 320px;
-    max-width: 320px;
-  }
-  
   .vscode-activity-bar {
     width: 56px;
     min-width: 56px;
@@ -278,6 +307,11 @@ body {
   .panel-content {
     padding: 16px;
     font-size: 15px;
+  }
+  
+  /* On mobile, disable resize and use fixed width */
+  .resize-handle {
+    display: none;
   }
 }
 

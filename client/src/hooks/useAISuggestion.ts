@@ -1,34 +1,47 @@
 import { useState, useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
 
-export interface Error {
+export interface LineCorrection {
   title: string;
-  line: string;
-  code: string;
-  fixedCode: string;
-  description: string;
+  startLine: number;
+  endLine: number;
+  severity: 'error' | 'warning' | 'info';
+  originalCode: string;
+  correctedCode: string;
+  explanation: string;
 }
 
 export interface Suggestion {
   title: string;
+  targetLines?: number[];
   code: string;
   explanation: string;
 }
 
 export interface Practice {
   title: string;
+  appliesTo: 'function' | 'variable' | 'structure' | 'general';
   code: string;
   explanation: string;
 }
 
+export interface CodeQuality {
+  score: number;
+  issues: string[];
+  suggestions: string[];
+}
+
 export interface AIResponse {
-  errors: Error[];
+  lineCorrections: LineCorrection[];
   suggestions: Suggestion[];
   bestPractices: Practice[];
+  codeQuality: CodeQuality;
   metadata?: {
     language: string;
     codeLength: number;
+    totalLines: number;
     processedAt: string;
+    aiModel: string;
   };
 }
 
@@ -94,19 +107,25 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
         aiData = response.data as AIResponse;
       }
       
-      // Simple validation with fallbacks
+      // Enhanced validation with fallbacks for new structure
       const validatedResponse: AIResponse = {
-        errors: Array.isArray(aiData.errors) ? aiData.errors : [],
+        lineCorrections: Array.isArray(aiData.lineCorrections) ? aiData.lineCorrections : [],
         suggestions: Array.isArray(aiData.suggestions) ? aiData.suggestions : [],
         bestPractices: Array.isArray(aiData.bestPractices) ? aiData.bestPractices : [],
+        codeQuality: aiData.codeQuality || {
+          score: 70,
+          issues: [],
+          suggestions: []
+        },
         metadata: aiData.metadata
       };
       
       // Log AI analysis results
       console.info('[AI] Analysis completed successfully', {
-        errors: validatedResponse.errors.length,
+        lineCorrections: validatedResponse.lineCorrections.length,
         suggestions: validatedResponse.suggestions.length,
         bestPractices: validatedResponse.bestPractices.length,
+        qualityScore: validatedResponse.codeQuality.score,
         language,
         codeLength: code.length,
         timestamp: new Date().toISOString()

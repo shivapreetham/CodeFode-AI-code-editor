@@ -13,7 +13,10 @@ CodeFode uses Socket.IO for real-time collaboration, enabling multiple users to 
 3. **Communication** - Chat and messaging
 4. **Cursor Tracking** - Multi-user cursor positions
 5. **Code Execution** - Running code in real-time
-6. **Activity Logging** - User activity tracking
+6. **File Activity** - File operations tracking
+7. **Notifications** - Activity notifications
+8. **Whiteboard** - Drawing and collaboration
+9. **Mouse Tracking** - Real-time pointer positions
 
 ### Event Naming Convention
 
@@ -550,56 +553,142 @@ socket.on('error', (error) => {
 });
 ```
 
-## 🧪 Testing Socket Events
+## 📁 File Activity Events
 
-### Event Testing Framework
+### FILE_OPENED
+**Direction:** Client → Server → All Clients in Room
+**Description:** Notifies when a user opens a file
 
+**Client → Server Payload:**
 ```javascript
-// Mock socket for testing
-const mockSocket = {
-  emit: jest.fn(),
-  on: jest.fn(),
-  off: jest.fn()
-};
-
-// Test event emission
-test('should emit CODE_CHANGE event', () => {
-  handleCodeChange('console.log("test");');
-  expect(mockSocket.emit).toHaveBeenCalledWith('CODE_CHANGE', {
-    roomId: 'test-room',
-    payload: expect.objectContaining({
-      content: 'console.log("test");'
-    })
-  });
-});
+{
+  roomId: "string",
+  username: "string", 
+  filePath: "string",
+  fileName: "string",
+  language: "string",
+  timestamp: "number"
+}
 ```
 
-### Integration Testing
+### FILE_EDIT_START
+**Direction:** Client → Server → All Clients in Room
+**Description:** Notifies when a user starts editing a file
+
+### FILE_EDIT_END
+**Direction:** Client → Server → All Clients in Room
+**Description:** Notifies when a user stops editing a file
+**Includes duration metadata**
+
+## 🔔 Notification Events
+
+### NOTIFICATION_ADDED
+**Direction:** Server → All Clients in Room
+**Description:** Broadcasts new activity notifications
+
+**Payload:**
+```javascript
+{
+  notification: {
+    type: "FILE_OPEN|FILE_EDIT_START|FILE_EDIT_END|WHITEBOARD_DRAW|WHITEBOARD_CLEAR",
+    message: "string",
+    username: "string",
+    timestamp: "Date",
+    metadata: {
+      path: "string",
+      language: "string", 
+      action: "string",
+      duration: "number"
+    }
+  }
+}
+```
+
+## 🎨 Whiteboard Events
+
+### WHITEBOARD_DRAW
+**Direction:** Client → Server → Other Clients in Room
+**Description:** Synchronizes drawing actions
+
+**Payload:**
+```javascript
+{
+  roomId: "string",
+  username: "string",
+  type: "path|object|text",
+  data: "any",
+  timestamp: "number"
+}
+```
+
+### WHITEBOARD_CLEAR
+**Direction:** Client → Server → Other Clients in Room  
+**Description:** Clears the whiteboard
+
+### WHITEBOARD_LOAD
+**Direction:** Client → Server
+**Description:** Loads saved whiteboard data
+
+**Response:**
+```javascript
+{
+  canvasData: "object|null",
+  metadata: {
+    width: "number",
+    height: "number", 
+    background: "string"
+  }
+}
+```
+
+## 🖱️ Mouse Tracking Events
+
+### MOUSE_POINTER_MOVE
+**Direction:** Client → Server → Other Clients in Room
+**Description:** Real-time mouse cursor positions
+
+**Payload:**
+```javascript
+{
+  roomId: "string",
+  username: "string",
+  x: "number",
+  y: "number", 
+  timestamp: "number"
+}
+```
+
+## 🛡️ Rate Limiting
+
+- **Code Execution:** 5 requests/minute
+- **Mouse Pointer:** 60 requests/10 seconds
+- **Whiteboard Draw:** 100 requests/10 seconds
+- **Chat Messages:** 20 requests/minute
+- **Code Changes:** 50 requests/10 seconds
+- **Cursor Changes:** 30 requests/10 seconds
+
+## 📊 Client Implementation Example
 
 ```javascript
-// Test real-time collaboration
-const testCollaboration = async () => {
-  const client1 = io('http://localhost:8000');
-  const client2 = io('http://localhost:8000');
-  
-  // Client 1 joins room
-  client1.emit('JOIN', { roomId: 'test', username: 'user1' });
-  
-  // Client 2 joins room  
-  client2.emit('JOIN', { roomId: 'test', username: 'user2' });
-  
-  // Client 1 sends code change
-  client1.emit('CODE_CHANGE', {
-    roomId: 'test',
-    payload: { content: 'new code' }
-  });
-  
-  // Verify client 2 receives change
-  return new Promise((resolve) => {
-    client2.on('CODE_CHANGE', (data) => {
-      expect(data.payload.content).toBe('new code');
-      resolve();
-    });
-  });
-};
+// Listen for notifications
+socket.on('NOTIFICATION_ADDED', ({ notification }) => {
+  addNotificationToUI(notification);
+});
+
+// File tracking
+socket.emit('FILE_OPENED', {
+  roomId: currentRoom,
+  username: currentUser,
+  filePath: file.path,
+  fileName: file.name,
+  language: file.language,
+  timestamp: Date.now()
+});
+
+// Whiteboard events
+socket.on('WHITEBOARD_DRAW', ({ username, type, data }) => {
+  if (username !== currentUser) {
+    drawOnCanvas(type, data);
+  }
+});
 ```

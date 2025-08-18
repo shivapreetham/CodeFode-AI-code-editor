@@ -66,15 +66,22 @@ SOCKET_PING_INTERVAL=25000
 NEXTAUTH_URL=https://yourdomain.com
 NEXTAUTH_SECRET=your-nextauth-secret-here
 
-# Server URLs
-NEXT_PUBLIC_SERVER_URL=https://your-backend-render-url.com
-NEXT_PUBLIC_SOCKET_URL=https://your-backend-render-url.com
+# Database (for NextAuth)
+MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net/codefode
 
-# Feature Flags
-NEXT_PUBLIC_AI_ENABLED=true
-NEXT_PUBLIC_FEATURE_WHITEBOARD=true
-NEXT_PUBLIC_FEATURE_AI_CHAT=true
-NEXT_PUBLIC_FEATURE_REALTIME=true
+# OAuth Providers
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Email Configuration (for NextAuth)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+EMAIL_SECURE=false
+
+# Server URLs
+NEXT_PUBLIC_BACKEND_URL=https://your-backend-render-url.com
 ```
 
 ### Render Deployment Steps
@@ -94,14 +101,6 @@ NEXT_PUBLIC_FEATURE_REALTIME=true
    - Build command: `npm install && npm run build`
    - Publish directory: `out/` (for static) or Start command: `npm start` (for web service)
    - Add all client environment variables from above
-
-### Key Differences from Development
-
-- **No Docker**: Uses native Node.js deployment
-- **No Redis**: Uses in-memory caching 
-- **No JWT server-side**: NextAuth handles authentication
-- **Compression enabled**: Automatic gzip for better performance
-- **Environment validation**: Strict config validation on startup
 
 ## Features
 

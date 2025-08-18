@@ -367,8 +367,7 @@ const AISuggestionsSidebar: React.FC<AISuggestionsSidebarProps> = ({
             )}
             
             {/* Show a message if no valid data was found */}
-            {(!aiResponse.errors || aiResponse.errors.length === 0) &&
-             (!aiResponse.suggestions || aiResponse.suggestions.length === 0) &&
+            {(!aiResponse.suggestions || aiResponse.suggestions.length === 0) &&
              (!aiResponse.bestPractices || aiResponse.bestPractices.length === 0) && (
               <div className="flex flex-col items-center justify-center p-8 space-y-3 text-yellow-400">
                 <Bug className="w-8 h-8" />

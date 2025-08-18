@@ -1,31 +1,5 @@
 import axios, { AxiosError } from 'axios';
-
-type NotificationType = 
-  | 'FILE_CREATE' 
-  | 'FILE_UPDATE' 
-  | 'FILE_DELETE' 
-  | 'FILE_MOVE'
-  | 'FOLDER_MOVE'
-  | 'FOLDER_CREATE' 
-  | 'FOLDER_DELETE' 
-  | 'USER_JOIN' 
-  | 'USER_LEAVE' 
-  | 'CODE_EXECUTE';
-
-interface NotificationMetadata {
-  path?: string;
-  language?: string;
-  executionStatus?: string;
-}
-
-interface Notification {
-  _id?: string;
-  type: NotificationType;
-  message: string;
-  username: string;
-  timestamp: Date;
-  metadata?: NotificationMetadata;
-}
+import { NotificationType, Notification, NotificationMetadata } from '@/interfaces/Notifications';
 
 interface NotificationFilters {
   type?: NotificationType;

@@ -195,8 +195,9 @@ export const saveNotes = asyncHandler(async (req, res) => {
 
 export const getNotes = asyncHandler(async (req, res) => {
   const { roomId, filePath } = req.params;
+  const decodedFilePath = decodeURIComponent(filePath);
   
-  logger.info('Notes retrieval request', { roomId, filePath });
+  logger.info('Notes retrieval request', { roomId, filePath: decodedFilePath });
   
   const workspace = await Workspace.findOne({ roomId });
   
@@ -204,13 +205,13 @@ export const getNotes = asyncHandler(async (req, res) => {
     throw new NotFoundError('Workspace not found');
   }
   
-  const note = workspace.notes.find(note => note.filePath === filePath);
+  const note = workspace.notes.find(note => note.filePath === decodedFilePath);
   
   if (!note) {
-    return successResponse(res, { filePath, content: '', lastModified: null, modifiedBy: null }, 'No notes found for this file');
+    return successResponse(res, { filePath: decodedFilePath, content: '', lastModified: null, modifiedBy: null }, 'No notes found for this file');
   }
   
-  logger.info('Notes retrieved successfully', { roomId, filePath });
+  logger.info('Notes retrieved successfully', { roomId, filePath: decodedFilePath });
   
   return successResponse(res, note, 'Notes retrieved successfully');
 });
@@ -234,8 +235,9 @@ export const getAllNotes = asyncHandler(async (req, res) => {
 export const deleteNotes = asyncHandler(async (req, res) => {
   const { roomId, filePath } = req.params;
   const { username } = req.body;
+  const decodedFilePath = decodeURIComponent(filePath);
   
-  logger.info('Notes deletion request', { roomId, filePath, username });
+  logger.info('Notes deletion request', { roomId, filePath: decodedFilePath, username });
   
   const workspace = await Workspace.findOne({ roomId });
   
@@ -243,11 +245,11 @@ export const deleteNotes = asyncHandler(async (req, res) => {
     throw new NotFoundError('Workspace not found');
   }
   
-  workspace.notes = workspace.notes.filter(note => note.filePath !== filePath);
+  workspace.notes = workspace.notes.filter(note => note.filePath !== decodedFilePath);
   workspace.lastUpdated = new Date();
   await workspace.save();
   
-  logger.info('Notes deleted successfully', { roomId, filePath, username });
+  logger.info('Notes deleted successfully', { roomId, filePath: decodedFilePath, username });
   
   return successResponse(res, null, 'Notes deleted successfully');
 });

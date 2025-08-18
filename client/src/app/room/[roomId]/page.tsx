@@ -448,8 +448,10 @@ const RoomContent = () => {
 
   const loadNotesFromBackend = async (filePath: string) => {
     try {
+      console.log('Loading notes for file:', filePath, 'roomId:', roomId);
       const { notesApi } = await import('@/services/notesApi');
       const response = await notesApi.getNotes(roomId, filePath);
+      console.log('Notes API response:', response);
       if (response.success) {
         setNotes(prev => new Map(prev).set(filePath, response.data.content || ''));
       }
@@ -539,8 +541,10 @@ const RoomContent = () => {
     noteSaveTimeoutRef.current = setTimeout(async () => {
       try {
         if (username && filePath) {
+          console.log('Saving notes for file:', filePath, 'roomId:', roomId, 'username:', username);
           const { notesApi } = await import('@/services/notesApi');
-          await notesApi.saveNotes(roomId, filePath, newNotes, username);
+          const response = await notesApi.saveNotes(roomId, filePath, newNotes, username);
+          console.log('Save notes response:', response);
         }
       } catch (error) {
         console.error('Failed to save notes:', error);
@@ -895,18 +899,16 @@ const RoomContent = () => {
           </div>
 
           {/* Code Output Panel */}
-          {isOutputExpand && (
-            <div style={{ height: '300px', borderTop: '1px solid hsl(var(--b3))' }}>
-              <CodeOutput
-                isOutputExpand={isOutputExpand}
-                codeOutput={codeOutput}
-                loading={loading}
-                codeStatus={codeStatus}
-                onToggleOutputVisibility={handleToggleOutputVisibility}
-                onRunCode={handleRunCode}
-              />
-            </div>
-          )}
+          <div style={{ height: isOutputExpand ? '300px' : 'auto', borderTop: '1px solid hsl(var(--b3))' }}>
+            <CodeOutput
+              isOutputExpand={isOutputExpand}
+              codeOutput={codeOutput}
+              loading={loading}
+              codeStatus={codeStatus}
+              onToggleOutputVisibility={handleToggleOutputVisibility}
+              onRunCode={handleRunCode}
+            />
+          </div>
 
           {/* Status Bar */}
           <div className="vscode-status-bar">

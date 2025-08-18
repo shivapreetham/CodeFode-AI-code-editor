@@ -115,6 +115,13 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   background: hsl(var(--b2));
+  /* Hide scrollbar for webkit browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.sidebar-content::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
 }
 
 /* Main Editor Area */

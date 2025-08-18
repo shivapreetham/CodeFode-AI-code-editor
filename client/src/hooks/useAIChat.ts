@@ -75,7 +75,7 @@ export const useAIChat = ({ enabled = true }: UseAIChatProps = {}) => {
         { message: message.trim(), context },
         {
           headers: { 'Content-Type': 'application/json' },
-          timeout: 30000
+          timeout: 90000 // Increased to 1.5 minutes for complex chat responses
         }
       );
       

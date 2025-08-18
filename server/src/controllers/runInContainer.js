@@ -112,11 +112,11 @@
 // export default executeCode;
 
 import { spawn } from "child_process";
-import { writeFile, unlink } from "fs/promises";
+import { writeFile, unlink, stat } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import os from "os"; // ✅ added
+import os from "os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -128,8 +128,9 @@ async function executeCode(language, code) {
   try {
     switch (language) {
       case "python": {
+        // Try python3 first, then python as fallback
         const process = spawn("python3", ["-c", code]);
-        return handleProcess(process);
+        return handleProcess(process, "python3");
       }
 
       case "javascript": {
@@ -176,7 +177,7 @@ async function executeCode(language, code) {
   }
 }
 
-function handleProcess(process) {
+function handleProcess(process, command = null) {
   return new Promise((resolve) => {
     let output = "";
     let error = "";
@@ -190,6 +191,35 @@ function handleProcess(process) {
         output: "Execution timed out",
       });
     }, TIMEOUT);
+
+    // Handle spawn errors (like ENOENT)
+    process.on("error", (err) => {
+      clearTimeout(timeoutId);
+      if (err.code === 'ENOENT') {
+        if (command === 'python3') {
+          // Try fallback to 'python'
+          try {
+            const fallbackProcess = spawn("python", ["-c", process.spawnargs[1]]);
+            return resolve(handleProcess(fallbackProcess, "python"));
+          } catch (fallbackErr) {
+            return resolve({
+              success: false,
+              output: "Python is not installed or not found in PATH. Please install Python 3 to run Python code."
+            });
+          }
+        } else {
+          return resolve({
+            success: false,
+            output: `${command || 'Command'} not found. Please make sure it's installed and available in PATH.`
+          });
+        }
+      } else {
+        return resolve({
+          success: false,
+          output: `Error executing command: ${err.message}`
+        });
+      }
+    });
 
     process.stdout.on("data", (data) => {
       output += data.toString();

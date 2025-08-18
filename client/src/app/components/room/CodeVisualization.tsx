@@ -130,82 +130,80 @@ const CodeVisualization: React.FC<CodeVisualizationProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-lg shadow-xl w-11/12 h-5/6 max-w-6xl">
+      <div className="modal-box w-11/12 h-5/6 max-w-6xl bg-base-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-base-300">
           <div className="flex items-center space-x-3">
-            <Network className="w-6 h-6 text-blue-400" />
-            <h2 className="text-xl font-semibold text-white">Code Visualization</h2>
+            <Network className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-semibold">Code Visualization</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded hover:bg-gray-700 transition-colors"
+            className="btn btn-sm btn-circle btn-ghost hover:bg-base-300 transition-colors duration-200"
           >
-            <X className="w-5 h-5 text-gray-400" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation */}
-        <div className="flex space-x-1 p-4 border-b border-gray-700">
-          <button
-            onClick={() => setSelectedView('files')}
-            className={`px-4 py-2 rounded transition-colors ${
-              selectedView === 'files'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            <FileCode className="w-4 h-4 inline mr-2" />
-            Files
-          </button>
-          <button
-            onClick={() => setSelectedView('functions')}
-            className={`px-4 py-2 rounded transition-colors ${
-              selectedView === 'functions'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            <Code className="w-4 h-4 inline mr-2" />
-            Functions
-          </button>
-          <button
-            onClick={() => setSelectedView('dependencies')}
-            className={`px-4 py-2 rounded transition-colors ${
-              selectedView === 'dependencies'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            <GitBranch className="w-4 h-4 inline mr-2" />
-            Dependencies
-          </button>
+        <div className="flex space-x-1 p-4 border-b border-base-300">
+          <div className="join">
+            <button
+              onClick={() => setSelectedView('files')}
+              className={`btn join-item transition-colors duration-200 ${
+                selectedView === 'files' ? 'btn-primary' : 'btn-outline hover:btn-primary hover:text-primary-content'
+              }`}
+            >
+              <FileCode className="w-4 h-4 mr-2" />
+              Files
+            </button>
+            <button
+              onClick={() => setSelectedView('functions')}
+              className={`btn join-item transition-colors duration-200 ${
+                selectedView === 'functions' ? 'btn-primary' : 'btn-outline hover:btn-primary hover:text-primary-content'
+              }`}
+            >
+              <Code className="w-4 h-4 mr-2" />
+              Functions
+            </button>
+            <button
+              onClick={() => setSelectedView('dependencies')}
+              className={`btn join-item transition-colors duration-200 ${
+                selectedView === 'dependencies' ? 'btn-primary' : 'btn-outline hover:btn-primary hover:text-primary-content'
+              }`}
+            >
+              <GitBranch className="w-4 h-4 mr-2" />
+              Dependencies
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div className="p-4 h-full overflow-auto">
           {selectedView === 'files' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-4">File Structure</h3>
+              <h3 className="text-lg font-semibold mb-4">File Structure</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {parsedFiles.map((file, index) => (
-                  <div key={index} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <FileCode className="w-5 h-5 text-blue-400" />
-                      <h4 className="font-semibold text-white">{file.name}</h4>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Code className="w-4 h-4 text-green-400" />
-                        <span className="text-gray-300">{file.functions.length} functions</span>
+                  <div key={index} className="card bg-base-200 shadow-sm">
+                    <div className="card-body p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <FileCode className="w-5 h-5 text-primary" />
+                        <h4 className="card-title text-base">{file.name}</h4>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <ArrowRight className="w-4 h-4 text-yellow-400" />
-                        <span className="text-gray-300">{file.imports.length} imports</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <GitBranch className="w-4 h-4 text-purple-400" />
-                        <span className="text-gray-300">{file.exports.length} exports</span>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center space-x-2">
+                          <Code className="w-4 h-4 text-success" />
+                          <span>{file.functions.length} functions</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <ArrowRight className="w-4 h-4 text-warning" />
+                          <span>{file.imports.length} imports</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <GitBranch className="w-4 h-4 text-secondary" />
+                          <span>{file.exports.length} exports</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -216,30 +214,32 @@ const CodeVisualization: React.FC<CodeVisualizationProps> = ({
 
           {selectedView === 'functions' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-4">Function Hierarchy</h3>
+              <h3 className="text-lg font-semibold mb-4">Function Hierarchy</h3>
               {parsedFiles.map((file, fileIndex) => (
-                <div key={fileIndex} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                  <h4 className="font-semibold text-white mb-3 flex items-center">
-                    <FileCode className="w-5 h-5 mr-2 text-blue-400" />
-                    {file.name}
-                  </h4>
-                  <div className="space-y-2">
-                    {file.functions.map((func, funcIndex) => (
-                      <div key={funcIndex} className="flex items-center space-x-3 p-2 bg-gray-700 rounded">
-                        <div className={`w-3 h-3 rounded-full ${
-                          func.type === 'function' ? 'bg-green-400' :
-                          func.type === 'class' ? 'bg-blue-400' : 'bg-yellow-400'
-                        }`} />
-                        <span className="text-gray-300 font-mono">{func.name}</span>
-                        <span className="text-gray-500 text-sm">line {func.line}</span>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          func.type === 'function' ? 'bg-green-900 text-green-300' :
-                          func.type === 'class' ? 'bg-blue-900 text-blue-300' : 'bg-yellow-900 text-yellow-300'
-                        }`}>
-                          {func.type}
-                        </span>
-                      </div>
-                    ))}
+                <div key={fileIndex} className="card bg-base-200 shadow-sm">
+                  <div className="card-body p-4">
+                    <h4 className="card-title text-base mb-3 flex items-center">
+                      <FileCode className="w-5 h-5 mr-2 text-primary" />
+                      {file.name}
+                    </h4>
+                    <div className="space-y-2">
+                      {file.functions.map((func, funcIndex) => (
+                        <div key={funcIndex} className="flex items-center space-x-3 p-2 bg-base-300 rounded">
+                          <div className={`w-3 h-3 rounded-full ${
+                            func.type === 'function' ? 'bg-success' :
+                            func.type === 'class' ? 'bg-primary' : 'bg-warning'
+                          }`} />
+                          <span className="font-mono">{func.name}</span>
+                          <span className="text-sm opacity-70">line {func.line}</span>
+                          <div className={`badge ${
+                            func.type === 'function' ? 'badge-success' :
+                            func.type === 'class' ? 'badge-primary' : 'badge-warning'
+                          }`}>
+                            {func.type}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -248,38 +248,40 @@ const CodeVisualization: React.FC<CodeVisualizationProps> = ({
 
           {selectedView === 'dependencies' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-4">Import/Export Dependencies</h3>
+              <h3 className="text-lg font-semibold mb-4">Import/Export Dependencies</h3>
               {parsedFiles.map((file, fileIndex) => (
-                <div key={fileIndex} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                  <h4 className="font-semibold text-white mb-3 flex items-center">
-                    <FileCode className="w-5 h-5 mr-2 text-blue-400" />
-                    {file.name}
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h5 className="text-sm font-semibold text-green-400 mb-2 flex items-center">
-                        <ArrowRight className="w-4 h-4 mr-1" />
-                        Imports ({file.imports.length})
-                      </h5>
-                      <div className="space-y-1">
-                        {file.imports.map((imp, impIndex) => (
-                          <div key={impIndex} className="text-sm text-gray-300 bg-gray-700 px-2 py-1 rounded">
-                            {imp}
-                          </div>
-                        ))}
+                <div key={fileIndex} className="card bg-base-200 shadow-sm">
+                  <div className="card-body p-4">
+                    <h4 className="card-title text-base mb-3 flex items-center">
+                      <FileCode className="w-5 h-5 mr-2 text-primary" />
+                      {file.name}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h5 className="text-sm font-semibold text-success mb-2 flex items-center">
+                          <ArrowRight className="w-4 h-4 mr-1" />
+                          Imports ({file.imports.length})
+                        </h5>
+                        <div className="space-y-1">
+                          {file.imports.map((imp, impIndex) => (
+                            <div key={impIndex} className="badge badge-outline badge-sm w-full justify-start p-2">
+                              {imp}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-semibold text-purple-400 mb-2 flex items-center">
-                        <GitBranch className="w-4 h-4 mr-1" />
-                        Exports ({file.exports.length})
-                      </h5>
-                      <div className="space-y-1">
-                        {file.exports.map((exp, expIndex) => (
-                          <div key={expIndex} className="text-sm text-gray-300 bg-gray-700 px-2 py-1 rounded">
-                            {exp}
-                          </div>
-                        ))}
+                      <div>
+                        <h5 className="text-sm font-semibold text-secondary mb-2 flex items-center">
+                          <GitBranch className="w-4 h-4 mr-1" />
+                          Exports ({file.exports.length})
+                        </h5>
+                        <div className="space-y-1">
+                          {file.exports.map((exp, expIndex) => (
+                            <div key={expIndex} className="badge badge-outline badge-sm w-full justify-start p-2">
+                              {exp}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>

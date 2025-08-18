@@ -135,9 +135,9 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
             {filteredNotifications.map((notification) => (
               <div 
                 key={notification._id} 
-                className="card bg-base-200 shadow-sm hover:bg-base-300 transition-colors"
+                className="bg-base-200 rounded-lg shadow-sm hover:bg-base-300 transition-colors duration-200 ease-linear p-3"
+                style={{ transitionTimingFunction: 'linear' }}
               >
-                <div className="card-body p-3">
                   <div className="flex items-start gap-3">
                     <div className={`mt-1 ${getColor(notification.type)}`}>
                       {getIcon(notification.type)}
@@ -156,7 +156,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
                       )}
                     </div>
                   </div>
-                </div>
               </div>
             ))}
           </>

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 export const notesApi = {
   async saveNotes(roomId: string, filePath: string, content: string, username: string) {
@@ -8,7 +8,7 @@ export const notesApi = {
       const response = await axios.post(
         `${API_BASE_URL}/api/workspace/${roomId}/notes`,
         {
-          filePath: encodeURIComponent(filePath),
+          filePath,
           content,
           username
         }

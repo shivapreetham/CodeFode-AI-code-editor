@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { IFile } from '@/interfaces/IFile';
-import { Sparkles, FileText, Eye, MessageSquare, Lightbulb, Plus } from 'lucide-react';
+import { Sparkles, FileText, Eye, Lightbulb, Plus } from 'lucide-react';
 
 interface CodeEditorProps {
   activeFile: IFile;
@@ -44,7 +44,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
-  const [showInlineNotes, setShowInlineNotes] = useState(false);
 
   const editorHeight = isOutputExpand ? '60vh' : '85vh';
 
@@ -135,19 +134,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         
         <div className="navbar-end">
           <div className="btn-group">
-            {/* Inline Notes Toggle */}
-            <button
-              onClick={() => setShowInlineNotes(!showInlineNotes)}
-              className={`btn btn-sm ${
-                showInlineNotes 
-                  ? 'btn-info' 
-                  : 'btn-ghost'
-              }`}
-              title="Toggle Inline Notes"
-            >
-              <MessageSquare className="w-4 h-4" />
-            </button>
-
             {/* Code Notes Panel */}
             <button
               onClick={onToggleNotes}

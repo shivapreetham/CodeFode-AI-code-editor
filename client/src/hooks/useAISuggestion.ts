@@ -88,7 +88,7 @@ export const useAISuggestions = ({ enabled = true }: UseAISuggestionsProps) => {
         { code, language },
         {
           headers: { 'Content-Type': 'application/json' },
-          timeout: 30000
+          timeout: 120000 // Increased to 2 minutes for larger code files
         }
       );
       

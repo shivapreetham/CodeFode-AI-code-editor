@@ -103,6 +103,9 @@ ${numberedCode}`;
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
+      requestOptions: {
+        timeout: config.ai.requestTimeout || 120000 // 2 minutes timeout for larger code
+      }
     });
 
     // Parse JSON response from Gemini
@@ -230,6 +233,9 @@ User question: ${message}`;
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: systemPrompt,
+      requestOptions: {
+        timeout: config.ai.requestTimeout || 90000 // 1.5 minutes for chat requests
+      }
     });
 
     const responseData = {

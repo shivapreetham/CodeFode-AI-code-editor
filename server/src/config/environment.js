@@ -30,7 +30,10 @@ const envSchema = z.object({
   
   // File upload limits
   MAX_FILE_SIZE: z.coerce.number().positive().default(10485760), // 10MB
-  MAX_CODE_LENGTH: z.coerce.number().positive().default(50000),
+  MAX_CODE_LENGTH: z.coerce.number().positive().default(100000), // Increased for larger code files
+  
+  // AI service timeouts
+  AI_REQUEST_TIMEOUT: z.coerce.number().positive().default(120000), // 2 minutes
   
   // Socket.IO configuration
   SOCKET_PING_TIMEOUT: z.coerce.number().positive().default(60000),
@@ -68,10 +71,6 @@ export const config = {
     redisUrl: env.REDIS_URL
   },
   
-  // AI services configuration
-  ai: {
-    googleApiKey: env.GOOGLE_AI_API_KEY
-  },
   
   // Security configuration
   security: {
@@ -90,6 +89,12 @@ export const config = {
   files: {
     maxFileSize: env.MAX_FILE_SIZE,
     maxCodeLength: env.MAX_CODE_LENGTH
+  },
+  
+  // AI configuration
+  ai: {
+    googleApiKey: env.GOOGLE_AI_API_KEY,
+    requestTimeout: env.AI_REQUEST_TIMEOUT
   },
   
   // Socket.IO configuration

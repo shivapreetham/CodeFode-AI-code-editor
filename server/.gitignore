@@ -43,3 +43,25 @@ Thumbs.db
 # Docker
 docker-compose.override.yml
 Dockerfile
+
+# Additional security
+.env.*
+!.env.example
+*.key
+*.pem
+*.crt
+
+# Testing
+coverage/
+.nyc_output
+test-results/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Lock files (keep package-lock.json)
+yarn.lock
+pnpm-lock.yaml

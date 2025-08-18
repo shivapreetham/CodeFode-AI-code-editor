@@ -28,6 +28,7 @@ yarn-error.log*
 # local env files
 .env
 .env*.local
+!.env.example
 .env.development
 .env.production
 
@@ -37,3 +38,29 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# Additional logs
+logs
+*.log
+
+# Testing
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Bundle analyzer
+.analyzer/
+
+# Cache directories
+.eslintcache
+.cache
+.parcel-cache

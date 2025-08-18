@@ -15,11 +15,8 @@ const envSchema = z.object({
   GOOGLE_AI_API_KEY: z.string().min(1, 'Google AI API key is required').optional(),
   
   // Security configuration
-  JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters').optional(),
   BCRYPT_ROUNDS: z.coerce.number().min(8).max(15).default(12),
   
-  // Redis configuration (if using Redis for caching)
-  REDIS_URL: z.string().url().optional(),
   
   // Allowed origins for CORS
   ALLOWED_ORIGINS: z.string().transform(val => val.split(',')).default('http://localhost:3000,http://localhost:3001'),
@@ -67,14 +64,12 @@ export const config = {
   
   // Database configuration
   database: {
-    mongoUri: env.MONGODB_URI,
-    redisUrl: env.REDIS_URL
+    mongoUri: env.MONGODB_URI
   },
   
   
   // Security configuration
   security: {
-    jwtSecret: env.JWT_SECRET,
     bcryptRounds: env.BCRYPT_ROUNDS,
     allowedOrigins: env.ALLOWED_ORIGINS
   },
@@ -93,6 +88,7 @@ export const config = {
   
   // AI configuration
   ai: {
+    cohereApiKey: env.COHERE_API_KEY,
     googleApiKey: env.GOOGLE_AI_API_KEY,
     requestTimeout: env.AI_REQUEST_TIMEOUT
   },
@@ -111,9 +107,6 @@ export const validateEnvironment = () => {
   if (config.server.isProduction) {
     if (!config.ai.cohereApiKey && !config.ai.googleApiKey) {
       required.push('At least one AI API key (COHERE_API_KEY or GOOGLE_AI_API_KEY)');
-    }
-    if (!config.security.jwtSecret) {
-      required.push('JWT_SECRET');
     }
   }
   

@@ -1,9 +1,10 @@
 import { rateLimit } from 'express-rate-limit';
+import config from '../config/environment.js';
 
 // Rate limiting configurations
 export const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.maxRequests,
   message: {
     success: false,
     error: {
@@ -54,8 +55,17 @@ export const securityHeaders = (req, res, next) => {
   // Referrer policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   
-  // Content Security Policy (basic)
-  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  // Content Security Policy
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' ws: wss:; " +
+    "font-src 'self'; " +
+    "object-src 'none'; " +
+    "base-uri 'self'"
+  );
   
   next();
 };
@@ -63,19 +73,15 @@ export const securityHeaders = (req, res, next) => {
 // CORS configuration
 export const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin in development (Render webhooks, etc.)
+    if (!origin && config.server.isDevelopment) return callback(null, true);
     
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://.com' // Replace with actual domain
-    ];
+    const allowedOrigins = config.security.allowedOrigins;
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`CORS: Origin ${origin} not allowed`));
     }
   },
   credentials: true,

@@ -19,7 +19,7 @@ const envSchema = z.object({
   
   
   // Allowed origins for CORS
-  ALLOWED_ORIGINS: z.string().transform(val => val.split(',')).default('http://localhost:3000,http://localhost:3001'),
+  ALLOWED_ORIGINS: z.string().transform(val => val.split(',')).default('http://localhost:3000,http://localhost:3001,https://codefode-ai-code-editor.onrender.com'),
   
   // Rate limiting configuration
   RATE_LIMIT_WINDOW_MS: z.coerce.number().positive().default(900000), // 15 minutes

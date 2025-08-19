@@ -20,6 +20,9 @@ import { getCacheStats } from './middleware/cache.js';
 // Validate environment configuration
 validateEnvironment();
 
+// Trust proxy for Render deployment
+app.set('trust proxy', true);
+
 // Global middleware setup
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

@@ -42,7 +42,6 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
-Dockerfile
 
 # Additional security
 .env.*

@@ -212,26 +212,45 @@ export const exportWhiteboard = async (req, res) => {
 };
 
 // Helper function to add whiteboard activity notification
-export const addWhiteboardNotification = async (roomId, type, username, message, metadata = {}) => {
+export const addWhiteboardNotification = async (roomId, type, username, message, metadata = {}, io = null) => {
   try {
-    const workspace = await Workspace.findOne({ roomId });
+    let workspace = await Workspace.findOne({ roomId });
     
-    if (workspace) {
-      const notification = {
-        type,
-        message,
-        username,
-        timestamp: new Date(),
-        metadata
-      };
-      
-      workspace.notifications.push(notification);
-      workspace.lastUpdated = new Date();
-      
-      await workspace.save();
-      
-      return notification;
+    if (!workspace) {
+      // Create workspace if it doesn't exist
+      console.log('Creating new workspace for whiteboard notification', roomId);
+      workspace = new Workspace({
+        roomId,
+        fileExplorerData: null,
+        openFiles: [],
+        activeFile: null,
+        filesContent: [],
+        notes: [],
+        notifications: []
+      });
     }
+    
+    const notification = {
+      type,
+      message,
+      username,
+      timestamp: new Date(),
+      metadata
+    };
+    
+    workspace.notifications.push(notification);
+    workspace.lastUpdated = new Date();
+    
+    await workspace.save();
+    
+    console.log('Whiteboard notification added', { roomId, type, username });
+    
+    // Broadcast notification to all users in room if io is provided
+    if (io) {
+      io.to(roomId).emit('notification_added', { notification });
+    }
+    
+    return notification;
   } catch (error) {
     console.error('Error adding whiteboard notification:', error);
   }

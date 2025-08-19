@@ -188,6 +188,31 @@ export const handleJoinRoom = (socket, userSocketMap, userRoomMap, chatMessages,
         });
       });
 
+      // Add user join notification
+      try {
+        let workspace = await Workspace.findOne({ roomId });
+        if (workspace) {
+          const notification = {
+            type: 'USER_JOIN',
+            message: `${username} joined the workspace`,
+            username,
+            timestamp: new Date(),
+            metadata: {
+              action: 'join'
+            }
+          };
+
+          workspace.notifications.push(notification);
+          workspace.lastUpdated = new Date();
+          await workspace.save();
+
+          // Broadcast notification to all users in room
+          io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+        }
+      } catch (notificationError) {
+        logger.error('Error adding join notification', { socketId: socket.id, error: notificationError.message });
+      }
+
       logSocketEvent(ACTIONS.JOIN, socket.id, { roomId, username, clientsCount: clients.length });
 
     } catch (error) {
@@ -407,6 +432,31 @@ export const handleDisconnection = (socket, userSocketMap, userRoomMap, io) => {
       const roomId = userRoomMap[socket.id];
 
       if (roomId) {
+        // Add user leave notification
+        try {
+          let workspace = await Workspace.findOne({ roomId });
+          if (workspace && username) {
+            const notification = {
+              type: 'USER_LEAVE',
+              message: `${username} left the workspace`,
+              username,
+              timestamp: new Date(),
+              metadata: {
+                action: 'leave'
+              }
+            };
+
+            workspace.notifications.push(notification);
+            workspace.lastUpdated = new Date();
+            await workspace.save();
+
+            // Broadcast notification to remaining users in room
+            socket.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+          }
+        } catch (notificationError) {
+          logger.error('Error adding leave notification', { socketId: socket.id, error: notificationError.message });
+        }
+
         // Notify other users in the room
         socket.to(roomId).emit(ACTIONS.DISCONNECTED, {
           socketId: socket.id,
@@ -430,8 +480,10 @@ export const handleDisconnection = (socket, userSocketMap, userRoomMap, io) => {
 export const handleFileOpened = (socket, userRoomMap, io) => {
   return async (data) => {
     try {
+      console.log('🎯 Server received FILE_OPENED event:', data);
       const validatedData = validateSocketData(fileTrackingSchema, data, socket.id, ACTIONS.FILE_OPENED);
       const { roomId, username, filePath, fileName, language } = validatedData;
+      console.log('🎯 Validated data:', { roomId, username, filePath, fileName, language });
 
       // Verify user is in the room
       if (userRoomMap[socket.id] !== roomId) {
@@ -440,27 +492,42 @@ export const handleFileOpened = (socket, userRoomMap, io) => {
       }
 
       // Add notification to workspace
-      const workspace = await Workspace.findOne({ roomId });
-      if (workspace) {
-        const notification = {
-          type: 'FILE_OPEN',
-          message: `${username} opened ${fileName || filePath}`,
-          username,
-          timestamp: new Date(),
-          metadata: {
-            path: filePath,
-            language,
-            action: 'open'
-          }
-        };
-
-        workspace.notifications.push(notification);
-        workspace.lastUpdated = new Date();
-        await workspace.save();
-
-        // Broadcast notification to all users in room
-        io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+      let workspace = await Workspace.findOne({ roomId });
+      if (!workspace) {
+        // Create workspace if it doesn't exist
+        logger.info('Creating new workspace for notifications', { roomId });
+        workspace = new Workspace({
+          roomId,
+          fileExplorerData: null,
+          openFiles: [],
+          activeFile: null,
+          filesContent: [],
+          notes: [],
+          notifications: []
+        });
       }
+
+      const notification = {
+        type: 'FILE_OPEN',
+        message: `${username} opened ${fileName || filePath}`,
+        username,
+        timestamp: new Date(),
+        metadata: {
+          path: filePath,
+          language,
+          action: 'open'
+        }
+      };
+
+      workspace.notifications.push(notification);
+      workspace.lastUpdated = new Date();
+      await workspace.save();
+
+      logger.info('File opened notification added', { roomId, username, filePath });
+
+      // Broadcast notification to all users in room
+      console.log('🔔 Broadcasting NOTIFICATION_ADDED to room:', roomId, notification);
+      io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
 
       logSocketEvent(ACTIONS.FILE_OPENED, socket.id, { roomId, filePath });
 
@@ -473,6 +540,7 @@ export const handleFileOpened = (socket, userRoomMap, io) => {
 export const handleFileEditStart = (socket, userRoomMap, io) => {
   return async (data) => {
     try {
+      console.log('🎯 Server received FILE_EDIT_START event:', data);
       const validatedData = validateSocketData(fileTrackingSchema, data, socket.id, ACTIONS.FILE_EDIT_START);
       const { roomId, username, filePath, fileName, language } = validatedData;
 
@@ -483,27 +551,41 @@ export const handleFileEditStart = (socket, userRoomMap, io) => {
       }
 
       // Add notification to workspace
-      const workspace = await Workspace.findOne({ roomId });
-      if (workspace) {
-        const notification = {
-          type: 'FILE_EDIT_START',
-          message: `${username} started editing ${fileName || filePath}`,
-          username,
-          timestamp: new Date(),
-          metadata: {
-            path: filePath,
-            language,
-            action: 'edit_start'
-          }
-        };
-
-        workspace.notifications.push(notification);
-        workspace.lastUpdated = new Date();
-        await workspace.save();
-
-        // Broadcast notification to all users in room
-        io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+      let workspace = await Workspace.findOne({ roomId });
+      if (!workspace) {
+        // Create workspace if it doesn't exist
+        logger.info('Creating new workspace for notifications', { roomId });
+        workspace = new Workspace({
+          roomId,
+          fileExplorerData: null,
+          openFiles: [],
+          activeFile: null,
+          filesContent: [],
+          notes: [],
+          notifications: []
+        });
       }
+
+      const notification = {
+        type: 'FILE_EDIT_START',
+        message: `${username} started editing ${fileName || filePath}`,
+        username,
+        timestamp: new Date(),
+        metadata: {
+          path: filePath,
+          language,
+          action: 'edit_start'
+        }
+      };
+
+      workspace.notifications.push(notification);
+      workspace.lastUpdated = new Date();
+      await workspace.save();
+
+      logger.info('File edit start notification added', { roomId, username, filePath });
+
+      // Broadcast notification to all users in room
+      io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
 
       logSocketEvent(ACTIONS.FILE_EDIT_START, socket.id, { roomId, filePath });
 
@@ -526,29 +608,43 @@ export const handleFileEditEnd = (socket, userRoomMap, io) => {
       }
 
       // Add notification to workspace
-      const workspace = await Workspace.findOne({ roomId });
-      if (workspace) {
-        const durationText = duration ? ` (${Math.round(duration / 1000)}s)` : '';
-        const notification = {
-          type: 'FILE_EDIT_END',
-          message: `${username} finished editing ${fileName || filePath}${durationText}`,
-          username,
-          timestamp: new Date(),
-          metadata: {
-            path: filePath,
-            language,
-            action: 'edit_end',
-            duration
-          }
-        };
-
-        workspace.notifications.push(notification);
-        workspace.lastUpdated = new Date();
-        await workspace.save();
-
-        // Broadcast notification to all users in room
-        io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
+      let workspace = await Workspace.findOne({ roomId });
+      if (!workspace) {
+        // Create workspace if it doesn't exist
+        logger.info('Creating new workspace for notifications', { roomId });
+        workspace = new Workspace({
+          roomId,
+          fileExplorerData: null,
+          openFiles: [],
+          activeFile: null,
+          filesContent: [],
+          notes: [],
+          notifications: []
+        });
       }
+
+      const durationText = duration ? ` (${Math.round(duration / 1000)}s)` : '';
+      const notification = {
+        type: 'FILE_EDIT_END',
+        message: `${username} finished editing ${fileName || filePath}${durationText}`,
+        username,
+        timestamp: new Date(),
+        metadata: {
+          path: filePath,
+          language,
+          action: 'edit_end',
+          duration
+        }
+      };
+
+      workspace.notifications.push(notification);
+      workspace.lastUpdated = new Date();
+      await workspace.save();
+
+      logger.info('File edit end notification added', { roomId, username, filePath, duration });
+
+      // Broadcast notification to all users in room
+      io.to(roomId).emit(ACTIONS.NOTIFICATION_ADDED, { notification });
 
       logSocketEvent(ACTIONS.FILE_EDIT_END, socket.id, { roomId, filePath, duration });
 
@@ -621,7 +717,8 @@ export const handleWhiteboardDraw = (socket, userRoomMap, io) => {
         'WHITEBOARD_DRAW',
         username,
         `${username} drew on the whiteboard`,
-        { action: 'draw' }
+        { action: 'draw' },
+        io
       );
 
       logSocketEvent(ACTIONS.WHITEBOARD_DRAW, socket.id, { roomId, type });
@@ -656,7 +753,8 @@ export const handleWhiteboardClear = (socket, userRoomMap, io) => {
         'WHITEBOARD_CLEAR',
         username,
         `${username} cleared the whiteboard`,
-        { action: 'clear' }
+        { action: 'clear' },
+        io
       );
 
       logSocketEvent(ACTIONS.WHITEBOARD_CLEAR, socket.id, { roomId });

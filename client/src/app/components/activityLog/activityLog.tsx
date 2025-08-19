@@ -25,6 +25,14 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
   const [filter, setFilter] = useState<string>('ALL');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // Debug logging (only when component first loads)
+  if (notifications.length === 0) {
+    console.log('🔍 ActivityLog: No notifications loaded yet');
+  } else if (notifications.length > 0 && !window.activityLogLoaded) {
+    console.log('🔍 ActivityLog: Loaded', notifications.length, 'notifications');
+    window.activityLogLoaded = true;
+  }
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'FILE_CREATE':
@@ -51,7 +59,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
       case 'WHITEBOARD_CLEAR':
         return <Trash2Icon className="w-4 h-4" />;
       default:
-        return null;
+        return <FileIcon className="w-4 h-4" />;
     }
   };
 
@@ -88,6 +96,8 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
   const filteredNotifications = notifications.filter(notification => 
     filter === 'ALL' ? true : notification.type.startsWith(filter)
   );
+
+  // Remove this debug log as it was causing infinite loops
 
   return (
     <div className="space-y-4">
@@ -130,34 +140,31 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
       )}
 
       <div className="space-y-2">
+        {/* Debug info */}
+        <div className="text-xs opacity-50 p-2 bg-base-300 rounded">
+          Debug: {notifications.length} total, {filteredNotifications.length} filtered
+        </div>
+        
         {filteredNotifications.length > 0 ? (
           <>
-            {filteredNotifications.map((notification) => (
+            {filteredNotifications.slice(0, 10).map((notification, index) => (
               <div 
-                key={notification._id} 
-                className="bg-base-200 rounded-lg shadow-sm hover:bg-base-300 transition-colors duration-200 ease-linear p-3"
-                style={{ transitionTimingFunction: 'linear' }}
+                key={notification._id || notification.id || index} 
+                className="bg-base-200 rounded-lg p-3 mb-2"
               >
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-1 ${getColor(notification.type)}`}>
-                      {getIcon(notification.type)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm">{notification.message}</p>
-                      <div className="flex gap-2 mt-1 text-xs opacity-70">
-                        <span>by {notification.username}</span>
-                        <span>•</span>
-                        <span>{new Date(notification.timestamp).toLocaleString()}</span>
-                      </div>
-                      {notification.metadata?.path && (
-                        <p className="mt-1 text-xs opacity-70">
-                          Path: {notification.metadata.path}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                <div className="text-sm">
+                  <strong>[{notification.type || 'UNKNOWN'}]</strong> {notification.message || 'No message'}
+                </div>
+                <div className="text-xs opacity-70 mt-1">
+                  by {notification.username || 'Unknown'} • {notification.timestamp ? new Date(notification.timestamp).toLocaleString() : 'No timestamp'}
+                </div>
               </div>
             ))}
+            {filteredNotifications.length > 10 && (
+              <div className="text-center text-xs opacity-70 p-2">
+                ... and {filteredNotifications.length - 10} more
+              </div>
+            )}
           </>
         ) : (
           <div className="alert">

@@ -7,8 +7,7 @@ import {
   Type, 
   Palette, 
   Download, 
-  Trash2,
-  Move
+  Trash2
 } from 'lucide-react';
 
 interface WhiteboardProps {
@@ -18,7 +17,7 @@ interface WhiteboardProps {
   isActive?: boolean;
 }
 
-type DrawingTool = 'pen' | 'eraser' | 'rectangle' | 'circle' | 'text' | 'select';
+type DrawingTool = 'pen' | 'eraser' | 'rectangle' | 'circle' | 'text';
 
 const Whiteboard: React.FC<WhiteboardProps> = ({ 
   roomId, 
@@ -157,14 +156,6 @@ const Whiteboard: React.FC<WhiteboardProps> = ({
       <div className="navbar bg-base-200 min-h-16 px-4 border-b border-base-300">
         <div className="navbar-start">
           <div className="join">
-            <button
-              onClick={() => setSelectedTool('select')}
-              className={`btn btn-sm join-item ${selectedTool === 'select' ? 'btn-primary' : 'btn-ghost'}`}
-              title="Select"
-            >
-              <Move className="w-4 h-4" />
-            </button>
-            
             <button
               onClick={() => setSelectedTool('pen')}
               className={`btn btn-sm join-item ${selectedTool === 'pen' ? 'btn-primary' : 'btn-ghost'}`}

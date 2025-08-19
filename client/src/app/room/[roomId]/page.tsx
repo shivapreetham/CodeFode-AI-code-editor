@@ -195,6 +195,7 @@ const RoomContent = () => {
         const startTime = Date.now();
         setEditingSessions(prev => new Map(prev).set(sessionKey, { startTime, filePath: currentFilePath }));
         
+        console.log('🎯 Emitting FILE_EDIT_START event:', currentFilePath);
         socketRef.current.emit(ACTIONS.FILE_EDIT_START, {
           roomId,
           username,
@@ -271,8 +272,13 @@ const RoomContent = () => {
     });
 
     socket.on(ACTIONS.NOTIFICATION_ADDED, ({ notification }: any) => {
-      console.log('🔔 Notification received:', notification.type);
-      setNotifications(prev => [notification, ...prev]);
+      console.log('🔔 Notification received via socket:', notification);
+      console.log('🔔 Notification type:', notification.type);
+      console.log('🔔 Notification message:', notification.message);
+      setNotifications(prev => {
+        console.log('🔔 Adding notification to list. Current count:', prev.length);
+        return [notification, ...prev];
+      });
     });
 
     socket.on(ACTIONS.CURSOR_CHANGE, (data: any) => {
@@ -399,6 +405,7 @@ const RoomContent = () => {
     
     // Track file opened event
     if (activeFile?.path && socketRef?.current && username) {
+      console.log('🎯 Emitting FILE_OPENED event:', activeFile.path);
       socketRef.current.emit(ACTIONS.FILE_OPENED, {
         roomId,
         username,

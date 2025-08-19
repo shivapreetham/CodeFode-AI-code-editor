@@ -346,6 +346,16 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
           filesContentMap.set(DEFAULT_FILE.path, DEFAULT_FILE);
         }
         
+        // Load notifications after workspace is ready
+        try {
+          console.log('🔔 Loading initial notifications...');
+          const initialNotifications = await getNotifications(roomId);
+          setNotifications(initialNotifications);
+          console.log('✅ Initial notifications loaded:', initialNotifications.length);
+        } catch (error) {
+          console.error('❌ Error loading initial notifications:', error);
+        }
+        
         clearTimeout(timeoutId);
         setWorkspaceLoaded(true);
         console.log('✅ Workspace loading completed');
@@ -475,13 +485,30 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
         console.warn('⚠️ Socket not connected, notification not broadcasted');
       }
     } catch (error: any) {
-      console.error('❌ Error adding notification:', error);
+      console.error('❌ Error adding notification:', {
+        message: error.message,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        roomId,
+        type,
+        username: details.username,
+        isInitialized,
+        socketConnected: socketRef?.current?.connected
+      });
       
       // Show user-friendly error message
       if (error?.response?.status === 429) {
         console.warn('⚠️ Rate limited - notification not added');
+        toast.error('Too many notifications - please slow down');
+      } else if (error?.response?.status === 404) {
+        toast.error('Workspace not found - please refresh the page');
+      } else if (error?.response?.status === 500) {
+        toast.error('Server error - please try again');
+      } else if (error.message?.includes('Network Error')) {
+        toast.error('Network error - check your connection');
       } else {
-        toast.error('Failed to add notification');
+        toast.error(`Failed to add notification: ${error.message || 'Unknown error'}`);
       }
     }
   }, [roomId, socketRef, isInitialized]);

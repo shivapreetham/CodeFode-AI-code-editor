@@ -47,7 +47,7 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md">
         {/* Login Card */}
-        <div className="card bg-[#585858] border-gray-700 p-8">
+        <div className="bg-[#585858] border border-gray-700 p-8 rounded-xl shadow-lg">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-white mb-2">
               Welcome to <span className="text-[var(--brand-color)] text-glow">CodeFode</span>
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-[var(--brand-color)] hover:bg-[#50882e] text-white p-4 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg font-semibold transition-colors duration-300 shadow-lg disabled:opacity-50"
               disabled={loading}
             >
               {loading ? (
@@ -116,7 +116,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => signIn("google", { callbackUrl: "/" })}
-              className="w-full bg-gray-700/50 hover:bg-gray-600/50 border border-gray-600 text-white p-4 rounded-lg font-medium transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
+              className="w-full bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg font-medium transition-colors duration-300 flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

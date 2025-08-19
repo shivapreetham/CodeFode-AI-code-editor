@@ -28,9 +28,9 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
   // Debug logging (only when component first loads)
   if (notifications.length === 0) {
     console.log('🔍 ActivityLog: No notifications loaded yet');
-  } else if (notifications.length > 0 && !window.activityLogLoaded) {
+  } else if (notifications.length > 0 && !(window as any).activityLogLoaded) {
     console.log('🔍 ActivityLog: Loaded', notifications.length, 'notifications');
-    window.activityLogLoaded = true;
+    (window as any).activityLogLoaded = true;
   }
 
   const getIcon = (type: string) => {
@@ -149,7 +149,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ notifications, onRefresh }) =
           <>
             {filteredNotifications.slice(0, 10).map((notification, index) => (
               <div 
-                key={notification._id || notification.id || index} 
+                key={notification._id || index} 
                 className="bg-base-200 rounded-lg p-3 mb-2"
               >
                 <div className="text-sm">

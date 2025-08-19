@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: codefode-server
+    env: node
+    buildCommand: chmod +x render-build.sh && ./render-build.sh
+    startCommand: npm run start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8000
+      - key: DEPLOYMENT_TIER
+        value: free
+    healthCheckPath: /health

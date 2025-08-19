@@ -2,7 +2,27 @@ import { z } from 'zod';
 import { ACTIONS } from '../constants/actions.js';
 import { logger, logSocketEvent } from '../middleware/logger.js';
 import { chatMessageSchema, codeExecutionSchema } from '../middleware/validation.js';
-import executeCode from '../controllers/runInContainer.js';
+// Conditional import based on deployment tier - fixed for dynamic imports
+let executeCode;
+const initializeExecuteCode = async () => {
+  const isFreeTier = process.env.DEPLOYMENT_TIER === 'free';
+  if (isFreeTier) {
+    const module = await import('../controllers/runInContainerLite.js');
+    executeCode = module.default;
+  } else {
+    const module = await import('../controllers/runInContainer.js');
+    executeCode = module.default;
+  }
+};
+
+// Initialize the import
+initializeExecuteCode().catch(error => {
+  console.error('Failed to initialize code execution module:', error);
+  // Fallback to regular import
+  import('../controllers/runInContainer.js').then(module => {
+    executeCode = module.default;
+  });
+});
 import { addWhiteboardNotification } from '../controllers/whiteboardController.js';
 import Whiteboard from '../models/whiteboard.js';
 import { Workspace } from '../models/workspace.js';
@@ -137,7 +157,7 @@ const emitError = (socket, message, eventName) => {
 
 // Socket event handlers
 export const handleJoinRoom = (socket, userSocketMap, userRoomMap, chatMessages, io) => {
-  return (data) => {
+  return async (data) => {
     try {
       // Rate limiting
       if (!rateLimiter.isAllowed(socket.id, 'join', 5, 60000)) {
@@ -367,7 +387,17 @@ export const handleExecuteCode = (socket, userRoomMap) => {
         codeLength: code.length
       });
 
-      // Execute code
+      // Check if executeCode is loaded
+      if (!executeCode) {
+        socket.emit(ACTIONS.CODE_RESULT, {
+          success: false,
+          output: 'Server is still initializing. Please try again in a moment.',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+
+      // Execute code with error handling
       const result = await executeCode(language, code);
 
       // Add metadata to result
@@ -426,7 +456,7 @@ export const handleGetMessages = (socket, chatMessages) => {
 };
 
 export const handleDisconnection = (socket, userSocketMap, userRoomMap, io) => {
-  return () => {
+  return async () => {
     try {
       const username = userSocketMap[socket.id];
       const roomId = userRoomMap[socket.id];

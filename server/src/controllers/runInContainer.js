@@ -146,11 +146,13 @@ async function executeCodeDirect(language, code, executionId) {
 
         await writeFile(`${filepath}.cpp`, code);
 
-        // Compile
+        // Compile with better C++ standard support
         const compileProcess = spawn("g++", [
           `${filepath}.cpp`,
           "-o",
           filepath,
+          "-std=c++14", // Use C++14 for better compatibility with GCC 6.3.0
+          "-Wall",      // Enable warnings
         ]);
         const compileResult = await handleProcess(compileProcess, null, executionId);
 
@@ -164,6 +166,32 @@ async function executeCodeDirect(language, code, executionId) {
         result = await handleProcess(runProcess, null, executionId);
 
         await cleanup(filepath, executionId);
+        break;
+      }
+
+
+      case "java": {
+        const className = extractJavaClassName(code) || "Main";
+        const filename = `${className}_${executionId}`;
+        const tmpDir = os.tmpdir();
+        const filepath = path.join(tmpDir, filename);
+
+        await writeFile(`${filepath}.java`, code);
+
+        // Compile
+        const compileProcess = spawn("javac", [`${filepath}.java`]);
+        const compileResult = await handleProcess(compileProcess, "javac", executionId);
+
+        if (!compileResult.success) {
+          await cleanupJava(filepath, executionId);
+          return compileResult;
+        }
+
+        // Run (using the class name, not the file path)
+        const runProcess = spawn("java", ["-cp", tmpDir, `${className}_${executionId}`]);
+        result = await handleProcess(runProcess, "java", executionId);
+
+        await cleanupJava(filepath, executionId);
         break;
       }
 
@@ -302,6 +330,37 @@ async function cleanup(filepath, executionId) {
   } catch (e) {
     logger.error("Cleanup error", { executionId, filepath, error: e.message });
   }
+}
+
+async function cleanupJava(filepath, executionId) {
+  try {
+    const filesToClean = [`${filepath}.java`, `${filepath}.class`];
+    
+    for (const file of filesToClean) {
+      if (await fileExists(file)) {
+        await unlink(file);
+        logger.debug('Cleaned up Java temporary file', { executionId, file });
+      }
+    }
+  } catch (e) {
+    logger.error("Java cleanup error", { executionId, filepath, error: e.message });
+  }
+}
+
+function extractJavaClassName(code) {
+  // Extract class name from Java code
+  const classMatch = code.match(/public\s+class\s+(\w+)/);
+  if (classMatch) {
+    return classMatch[1];
+  }
+  
+  // Fallback: look for any class declaration
+  const anyClassMatch = code.match(/class\s+(\w+)/);
+  if (anyClassMatch) {
+    return anyClassMatch[1];
+  }
+  
+  return "Main"; // Default class name
 }
 
 // Export queue stats for monitoring

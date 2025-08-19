@@ -571,9 +571,9 @@ export const RoomProvider: React.FC<RoomProviderProps> = ({ children, roomId, us
       extension: activeFile.name.split(".")[1],
     };
 
-    if (!["cpp", "py", "js"].includes(data.extension)) {
+    if (!["cpp", "py", "js", "java"].includes(data.extension)) {
       toast.error(
-        `Unsupported programming language (${data.language}). Supported languages are C++, Python, and JavaScript.`
+        `Unsupported programming language (${data.language}). Supported languages are C++, Python, JavaScript, and Java.`
       );
       return;
     }

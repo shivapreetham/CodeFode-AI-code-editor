@@ -156,9 +156,9 @@ export const useRoomState = (roomId: string | undefined, username: string | null
       extension: activeFile.name.split(".")[1],
     };
 
-    if (!["cpp", "py", "js"].includes(data.extension)) {
+    if (!["cpp", "py", "js", "java"].includes(data.extension)) {
       toast.error(
-        `Unsupported programming language (${data.language}). Supported languages are C++, Python, and JavaScript.`
+        `Unsupported programming language (${data.language}). Supported languages are C++, Python, JavaScript, and Java.`
       );
       return;
     }

@@ -4,6 +4,7 @@ export const getFileLanguage = (fileName: string): string => {
       'js': 'javascript',
       'py': 'python',
       'cpp': 'cpp',
+      'java': 'java',
       'ts': 'typescript',
       'html': 'html',
       'css': 'css',
